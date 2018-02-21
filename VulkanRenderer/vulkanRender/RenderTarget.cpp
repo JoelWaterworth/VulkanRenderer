@@ -1,0 +1,225 @@
+#include "RenderTarget.h"
+#include "util.h"
+#include <iostream>
+#include <functional>
+#include <numeric>
+
+
+RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
+{
+	this->resolution = r;
+	this->device = d;
+	if (colourReq.size() == 0) {
+		assert("colourReq cannot be empty");
+	}
+
+	auto const samplerInfo = vk::SamplerCreateInfo()
+            .setMagFilter(vk::Filter::eNearest)
+            .setMinFilter(vk::Filter::eNearest)
+            .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+			.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+			.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+			.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+            .setMipLodBias(0.0f)
+            .setMinLod(0.0f)
+            .setMaxLod(1.0f)
+            .setAnisotropyEnable(0)
+			.setMaxAnisotropy(1.0f)
+			.setBorderColor(vk::BorderColor::eFloatOpaqueWhite)
+			.setCompareEnable(0)
+			.setCompareOp(vk::CompareOp::eNever)
+			.setUnnormalizedCoordinates(0);
+	this->sampler = device.createSampler(samplerInfo);
+
+	std::vector<AttachmentInfo> Req = colourReq;
+	Req.push_back(depthReq);
+	std::pair<std::vector<Attachment>, vk::DeviceMemory> ret = Attachment::createAttachement(device, resolution, sampler, Req);
+	std::vector<Attachment> attachments = ret.first;
+	this->memory = ret.second;
+
+	std::vector<vk::AttachmentDescription> renderpassAttachments(Req.size());
+	for (int i = 0; i < Req.size(); i++) {
+		renderpassAttachments[i] = vk::AttachmentDescription()
+			.setFormat(Req[i].format)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setLoadOp(vk::AttachmentLoadOp::eClear)
+			.setStoreOp(vk::AttachmentStoreOp::eStore)
+			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+			.setInitialLayout(vk::ImageLayout::eUndefined)
+			.setFinalLayout(Req[i].imageLayout);
+	}
+
+	std::vector<vk::AttachmentReference> colorAttachmentsRef(colourReq.size());
+	for (int i = 0; i < colourReq.size(); i++) {
+		colorAttachmentsRef[i] = vk::AttachmentReference()
+			.setAttachment(i)
+			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+	}
+	auto const depthAttachmentsRef = vk::AttachmentReference()
+		.setAttachment(colourReq.size())
+		.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+	auto const subpass = vk::SubpassDescription()
+            .setColorAttachmentCount(colourReq.size())
+            .setPColorAttachments(colorAttachmentsRef.data())
+            .setPDepthStencilAttachment(&depthAttachmentsRef)
+			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
+	vk::SubpassDependency dependencies[2] = {
+		vk::SubpassDependency()
+			.setDependencyFlags(vk::DependencyFlagBits::eByRegion)
+			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+			.setSrcStageMask(vk::PipelineStageFlagBits::eBottomOfPipe)
+			.setSrcAccessMask(vk::AccessFlagBits::eMemoryRead)
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite),
+		vk::SubpassDependency()
+			.setDependencyFlags(vk::DependencyFlagBits::eByRegion)
+			.setDstSubpass(VK_SUBPASS_EXTERNAL)
+			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite)
+	};
+	auto const deferredRenderPassCreateInfo = vk::RenderPassCreateInfo()
+            .setAttachmentCount(renderpassAttachments.size())
+            .setPAttachments(renderpassAttachments.data())
+            .setSubpassCount(1)
+            .setPSubpasses(&subpass)
+            .setDependencyCount(2)
+            .setPDependencies(dependencies);
+	this->renderPass = device.createRenderPass(deferredRenderPassCreateInfo);
+
+	if (frameBufferImageViews) {
+		this->depthAttachment = attachments.back();
+		attachments.pop_back();
+		for (auto& present_image_view : *frameBufferImageViews) {
+			vk::ImageView framebufferAttachments[2] = { present_image_view , depthAttachment.getDescriptor().imageView };
+			auto const frameBufferCreateInfo = vk::FramebufferCreateInfo()
+				.setRenderPass(renderPass)
+				.setAttachmentCount(2)
+				.setPAttachments(framebufferAttachments)
+				.setWidth(resolution.width)
+				.setHeight(resolution.height)
+				.setLayers(1);
+		}
+	} else {
+		std::vector<vk::ImageView> attachmentsViews(attachments.size());
+		for (int i = 0; i < attachments.size(); i++) {
+			attachmentsViews[i] = attachments[i].getDescriptor().imageView;
+		}
+
+		auto const frameBufferCreateInfo = vk::FramebufferCreateInfo()
+			.setRenderPass(renderPass)
+			.setAttachmentCount(attachmentsViews.size())
+			.setPAttachments(attachmentsViews.data())
+			.setWidth(resolution.width)
+			.setHeight(resolution.height)
+			.setLayers(1);
+		this->framebuffers.push_back(device.createFramebuffer(frameBufferCreateInfo));
+		this->depthAttachment = attachments.back();
+		attachments.pop_back();
+	}
+	this->colourAttachments = attachments;
+}
+
+RenderTarget::~RenderTarget() {
+	for (vk::Framebuffer framebuffer : framebuffers) {
+		device.destroyFramebuffer(framebuffer);
+	}
+
+	device.destroyRenderPass(renderPass);
+	device.destroySampler(sampler);
+
+	for (Attachment attachment : colourAttachments) {
+		device.destroyImageView(attachment.getDescriptor().imageView);
+		device.destroyImage(attachment.getImage());
+	}
+
+	device.destroyImageView(depthAttachment.getDescriptor().imageView);
+	device.destroyImage(depthAttachment.getImage());
+	device.freeMemory(memory);
+}
+
+Attachment::Attachment()
+{
+}
+
+std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttachement(EnDevice device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo>info)
+{
+	std::pair<std::vector<Attachment>, vk::DeviceMemory> pair;
+	std::vector<std::pair<vk::Image, vk::MemoryRequirements>> images(info.size());
+	vk::DeviceSize size = 0;
+
+	for (int i = 0; i < info.size(); i++) {
+		auto const imageInfo = vk::ImageCreateInfo()
+			.setImageType(vk::ImageType::e2D)
+			.setFormat(info[i].format)
+			.setExtent(vk::Extent3D(extent.width, extent.height, 1))
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setTiling(vk::ImageTiling::eOptimal)
+			.setUsage(info[i].usage | vk::ImageUsageFlagBits::eSampled)
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setQueueFamilyIndexCount(0);
+		vk::Image image = nullptr;
+		VK_CHECK_RESULT(device.createImage(&imageInfo, NULL, &image));
+		auto req = device.getImageMemoryRequirements(image);
+		size += req.size;
+		images[i] = std::make_pair(image, req);
+	}
+
+	auto memAlloc = vk::MemoryAllocateInfo()
+		.setAllocationSize(size)
+		.setMemoryTypeIndex(0);
+	if (!device.memoryTypeFromProperties(
+		images[0].second,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		&memAlloc.memoryTypeIndex)) {
+		assert("no suitable memory type");
+	};
+
+	pair.second = device.allocateMemory(memAlloc);
+	for (int i = 0; i < info.size(); i++) {
+		int size = 0;
+		for (int ii = 0; ii < i; ii++) {
+			size += images[ii].second.size;
+		}
+		device.bindImageMemory(images[i].first, pair.second, size);
+	}
+	std::vector<Attachment> attachments(info.size());
+	for (int i = 0; i < info.size(); i++) {
+		vk::ImageAspectFlagBits aspect;
+		if (info[i].usage == vk::ImageUsageFlagBits::eColorAttachment) {
+			aspect = vk::ImageAspectFlagBits::eColor;
+		}
+		else {
+			aspect = vk::ImageAspectFlagBits::eDepth;
+		};
+
+		auto const viewInfo = vk::ImageViewCreateInfo()
+			.setViewType(vk::ImageViewType::e2D)
+			.setFormat(info[i].format)
+			.setComponents(vk::ComponentMapping(
+				vk::ComponentSwizzle::eIdentity
+			))
+			.setSubresourceRange(vk::ImageSubresourceRange(
+				aspect, 0, 1, 0, 1
+			))
+			.setImage(images[i].first);
+		vk::ImageView imageView = device.createImageView(viewInfo);
+		vk::Image image;
+			attachments[i] = Attachment(
+				images[i].first, 
+				info[i].format,
+				info[i].usage, 
+				vk::DescriptorImageInfo()
+					.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+					.setImageView(imageView)
+					.setSampler(sampler)
+			);
+		
+	}
+	pair.first = attachments;
+	return pair;
+}
