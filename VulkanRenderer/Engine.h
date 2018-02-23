@@ -9,7 +9,6 @@ public:
 	Engine();
 	~Engine();
 
-private:
 	Window* window;
 	Renderer* renderer;
 };

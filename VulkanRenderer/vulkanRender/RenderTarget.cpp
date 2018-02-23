@@ -5,10 +5,10 @@
 #include <numeric>
 
 
-RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
+RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
 {
 	this->resolution = r;
-	this->device = d;
+	_device = d;
 	if (colourReq.size() == 0) {
 		assert("colourReq cannot be empty");
 	}
@@ -29,11 +29,11 @@ RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInf
 			.setCompareEnable(0)
 			.setCompareOp(vk::CompareOp::eNever)
 			.setUnnormalizedCoordinates(0);
-	this->sampler = device.createSampler(samplerInfo);
+	this->sampler = _device->createSampler(samplerInfo);
 
 	std::vector<AttachmentInfo> Req = colourReq;
 	Req.push_back(depthReq);
-	std::pair<std::vector<Attachment>, vk::DeviceMemory> ret = Attachment::createAttachement(device, resolution, sampler, Req);
+	std::pair<std::vector<Attachment>, vk::DeviceMemory> ret = Attachment::createAttachement(_device, resolution, sampler, Req);
 	std::vector<Attachment> attachments = ret.first;
 	this->memory = ret.second;
 
@@ -87,7 +87,7 @@ RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInf
             .setPSubpasses(&subpass)
             .setDependencyCount(2)
             .setPDependencies(dependencies);
-	this->renderPass = device.createRenderPass(deferredRenderPassCreateInfo);
+	this->renderPass = _device->createRenderPass(deferredRenderPassCreateInfo);
 
 	if (frameBufferImageViews) {
 		this->depthAttachment = attachments.back();
@@ -101,6 +101,7 @@ RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInf
 				.setWidth(resolution.width)
 				.setHeight(resolution.height)
 				.setLayers(1);
+			this->framebuffers.push_back(_device->createFramebuffer(frameBufferCreateInfo));
 		}
 	} else {
 		std::vector<vk::ImageView> attachmentsViews(attachments.size());
@@ -115,7 +116,7 @@ RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInf
 			.setWidth(resolution.width)
 			.setHeight(resolution.height)
 			.setLayers(1);
-		this->framebuffers.push_back(device.createFramebuffer(frameBufferCreateInfo));
+		this->framebuffers.push_back(_device->createFramebuffer(frameBufferCreateInfo));
 		this->depthAttachment = attachments.back();
 		attachments.pop_back();
 	}
@@ -124,27 +125,27 @@ RenderTarget::RenderTarget(EnDevice d, vk::Extent2D r, std::vector<AttachmentInf
 
 RenderTarget::~RenderTarget() {
 	for (vk::Framebuffer framebuffer : framebuffers) {
-		device.destroyFramebuffer(framebuffer);
+		_device->destroyFramebuffer(framebuffer);
 	}
 
-	device.destroyRenderPass(renderPass);
-	device.destroySampler(sampler);
+	_device->destroyRenderPass(renderPass);
+	_device->destroySampler(sampler);
 
 	for (Attachment attachment : colourAttachments) {
-		device.destroyImageView(attachment.getDescriptor().imageView);
-		device.destroyImage(attachment.getImage());
+		_device->destroyImageView(attachment.getDescriptor().imageView);
+		_device->destroyImage(attachment.getImage());
 	}
 
-	device.destroyImageView(depthAttachment.getDescriptor().imageView);
-	device.destroyImage(depthAttachment.getImage());
-	device.freeMemory(memory);
+	_device->destroyImageView(depthAttachment.getDescriptor().imageView);
+	_device->destroyImage(depthAttachment.getImage());
+	_device->freeMemory(memory);
 }
 
 Attachment::Attachment()
 {
 }
 
-std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttachement(EnDevice device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo>info)
+std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttachement(EnDevice* device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo>info)
 {
 	std::pair<std::vector<Attachment>, vk::DeviceMemory> pair;
 	std::vector<std::pair<vk::Image, vk::MemoryRequirements>> images(info.size());
@@ -163,8 +164,8 @@ std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttacheme
 			.setSharingMode(vk::SharingMode::eExclusive)
 			.setQueueFamilyIndexCount(0);
 		vk::Image image = nullptr;
-		VK_CHECK_RESULT(device.createImage(&imageInfo, NULL, &image));
-		auto req = device.getImageMemoryRequirements(image);
+		VK_CHECK_RESULT(device->createImage(&imageInfo, NULL, &image));
+		auto req = device->getImageMemoryRequirements(image);
 		size += req.size;
 		images[i] = std::make_pair(image, req);
 	}
@@ -172,20 +173,20 @@ std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttacheme
 	auto memAlloc = vk::MemoryAllocateInfo()
 		.setAllocationSize(size)
 		.setMemoryTypeIndex(0);
-	if (!device.memoryTypeFromProperties(
+	if (!device->memoryTypeFromProperties(
 		images[0].second,
 		vk::MemoryPropertyFlagBits::eDeviceLocal,
 		&memAlloc.memoryTypeIndex)) {
 		assert("no suitable memory type");
 	};
 
-	pair.second = device.allocateMemory(memAlloc);
+	pair.second = device->allocateMemory(memAlloc);
 	for (int i = 0; i < info.size(); i++) {
 		int size = 0;
 		for (int ii = 0; ii < i; ii++) {
 			size += images[ii].second.size;
 		}
-		device.bindImageMemory(images[i].first, pair.second, size);
+		device->bindImageMemory(images[i].first, pair.second, size);
 	}
 	std::vector<Attachment> attachments(info.size());
 	for (int i = 0; i < info.size(); i++) {
@@ -207,7 +208,7 @@ std::pair<std::vector<Attachment>, vk::DeviceMemory> Attachment::createAttacheme
 				aspect, 0, 1, 0, 1
 			))
 			.setImage(images[i].first);
-		vk::ImageView imageView = device.createImageView(viewInfo);
+		vk::ImageView imageView = device->createImageView(viewInfo);
 		vk::Image image;
 			attachments[i] = Attachment(
 				images[i].first, 

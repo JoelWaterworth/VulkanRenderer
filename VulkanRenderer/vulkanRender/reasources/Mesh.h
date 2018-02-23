@@ -25,6 +25,7 @@ public:
 	static Mesh* Create(EnDevice* device, path p);
 	Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
 	~Mesh();
+	void draw(vk::CommandBuffer commandBuffer);
 private:
 	EnDevice* device = nullptr;
 	vk::DeviceMemory indexMemory;

@@ -5,10 +5,12 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_sdk_platform.h>
 
+class Engine;
+
 class Window
 {
 public:
-	Window(uint32_t size_x, uint32_t size_y, std::string title);
+	Window(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine);
 	~Window();
 
 	bool Update();

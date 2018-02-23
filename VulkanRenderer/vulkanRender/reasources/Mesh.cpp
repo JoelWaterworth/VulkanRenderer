@@ -75,3 +75,19 @@ Mesh::~Mesh()
 	device->freeMemory(indexMemory);
 	device->freeMemory(vertexMemory);
 }
+
+void Mesh::draw(vk::CommandBuffer commandBuffer) {
+	commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
+
+	commandBuffer.bindIndexBuffer(
+			indexBuffer,
+			indexOffset,
+			vk::IndexType::eUint32);
+
+	commandBuffer.drawIndexed(
+			indexBufferLen,
+			1,
+			0,
+			vertexOffset,
+			1);
+}

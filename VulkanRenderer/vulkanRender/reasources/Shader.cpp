@@ -1,8 +1,9 @@
 #include "Shader.h"
+#include "../util.h"
 #include <iostream>
 #include <fstream>
 
-std::pair<const void*, size_t> Shader::compile(path shader) {
+std::pair<char *, size_t> Shader::compile(path shader) {
 	path spv_path = shader;
 	std::string filename = shader.filename().string();
 	filename.append("spv.spv");
@@ -12,10 +13,10 @@ std::pair<const void*, size_t> Shader::compile(path shader) {
 	command.push_back(' ');
 	command.append(shader.string());
 	system(command.data());
-
-	FILE *fp = fopen(spv_path.string().data(), "rb");
+	FILE *fp;
+	fopen_s(&fp, spv_path.string().data(), "rb");
 	if (!fp) {
-		return std::pair<const void*, size_t>();
+		return std::pair<char *, size_t>();
 	}
 
 	fseek(fp, 0L, SEEK_END);
@@ -32,6 +33,30 @@ std::pair<const void*, size_t> Shader::compile(path shader) {
 	return std::make_pair((char *)shader_code, size);
 }
 
+char * Shader::readSpv(const char * filename, size_t * psize)
+{
+	FILE *fp;
+	fopen_s(&fp, filename, "rb");
+	if (!fp) {
+		return nullptr;
+	}
+
+	fseek(fp, 0L, SEEK_END);
+	long int size = ftell(fp);
+
+	fseek(fp, 0L, SEEK_SET);
+
+	void *shader_code = malloc(size);
+	size_t retval = fread(shader_code, size, 1, fp);
+	assert(retval == 1);
+
+	*psize = size;
+
+	fclose(fp);
+
+	return (char *)shader_code;
+}
+
 vk::ShaderModule Shader::createShaderModule(EnDevice* device, const void * code, size_t size)
 {
 	auto const moduleCreateInfo = vk::ShaderModuleCreateInfo().setCodeSize(size).setPCode((uint32_t const *)code);
@@ -45,8 +70,8 @@ vk::ShaderModule Shader::createShaderModule(EnDevice* device, const void * code,
 
 pair<vk::ShaderModule, vk::PipelineShaderStageCreateInfo> Shader::createPipelineStageInfo(EnDevice* device, path shader, vk::ShaderStageFlagBits stage)
 {
-	std::pair<const void*, unsigned int> res = Shader::compile(shader);
-	vk::ShaderModule Module = Shader::createShaderModule(device, res.first, res.second);
+	std::pair<char *, size_t> s = compile(shader);
+	vk::ShaderModule Module = Shader::createShaderModule(device, s.first, s.second);
 	vk::PipelineShaderStageCreateInfo pipelineStageInfo = vk::PipelineShaderStageCreateInfo()
 		.setModule(Module)
 		.setPName("main")
@@ -54,7 +79,7 @@ pair<vk::ShaderModule, vk::PipelineShaderStageCreateInfo> Shader::createPipeline
 	return make_pair(Module, pipelineStageInfo);
 }
 
-Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertPath, path fragPath)
+Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts)
 {
 	pair<vk::ShaderModule, vk::PipelineShaderStageCreateInfo> vertRes =
 		Shader::createPipelineStageInfo(device, vertPath, vk::ShaderStageFlagBits::eVertex);
@@ -81,10 +106,10 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setPVertexAttributeDescriptions(vertexInputAttributeDescriptions)
 		.setVertexBindingDescriptionCount(1)
 		.setPVertexBindingDescriptions(vertexInputBindingDescriptions);
+
 	auto const vertexInputAssemblyStateInfo = vk::PipelineInputAssemblyStateCreateInfo()
 		.setPrimitiveRestartEnable(0)
 		.setTopology(vk::PrimitiveTopology::eTriangleList);
-	return nullptr;
 
 	auto const viewports = vk::Viewport()
         .setX(0.0f)
@@ -116,7 +141,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setRasterizerDiscardEnable(0);
 
-	auto const multisample_state_info = vk::PipelineMultisampleStateCreateInfo()
+	auto const multisampleStateInfo = vk::PipelineMultisampleStateCreateInfo()
 		.setRasterizationSamples(vk::SampleCountFlagBits::e1);
 
 	auto const noopStencilState = vk::StencilOpState()
@@ -136,114 +161,93 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setMaxDepthBounds(1.0f)
 		.setMinDepthBounds(0.0f);
 
-        let color_blend_attachment_states = if deferred { vec![vk::PipelineColorBlendAttachmentState {
-                blend_enable: 0,
-                src_color_blend_factor: vk::BlendFactor::SrcColor,
-                dst_color_blend_factor:
-                vk::BlendFactor::OneMinusDstColor,
-                color_blend_op: vk::BlendOp::Add,
-                src_alpha_blend_factor: vk::BlendFactor::Zero,
-                dst_alpha_blend_factor: vk::BlendFactor::Zero,
-                alpha_blend_op: vk::BlendOp::Add,
-                color_write_mask: vk::ColorComponentFlags::all(),
-            },
-            vk::PipelineColorBlendAttachmentState {
-                blend_enable: 0,
-                src_color_blend_factor: vk::BlendFactor::SrcColor,
-                dst_color_blend_factor:
-                vk::BlendFactor::OneMinusDstColor,
-                color_blend_op: vk::BlendOp::Add,
-                src_alpha_blend_factor: vk::BlendFactor::Zero,
-                dst_alpha_blend_factor: vk::BlendFactor::Zero,
-                alpha_blend_op: vk::BlendOp::Add,
-                color_write_mask: vk::ColorComponentFlags::all(),
-            },
-            vk::PipelineColorBlendAttachmentState {
-                blend_enable: 0,
-                src_color_blend_factor: vk::BlendFactor::SrcColor,
-                dst_color_blend_factor:
-                vk::BlendFactor::OneMinusDstColor,
-                color_blend_op: vk::BlendOp::Add,
-                src_alpha_blend_factor: vk::BlendFactor::Zero,
-                dst_alpha_blend_factor: vk::BlendFactor::Zero,
-                alpha_blend_op: vk::BlendOp::Add,
-                color_write_mask: vk::ColorComponentFlags::all(),
-            }
+	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getColourAttachmentNum());
+	for (auto& a : colorBlendAttachmentStates) {
+		a = vk::PipelineColorBlendAttachmentState()
+			.setBlendEnable(0)
+			.setSrcColorBlendFactor(vk::BlendFactor::eSrcColor)
+			.setSrcColorBlendFactor(vk::BlendFactor::eOneMinusDstColor)
+			.setColorWriteMask(
+				vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+				vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+			.setColorBlendOp(vk::BlendOp::eAdd)
+			.setAlphaBlendOp(vk::BlendOp::eAdd);
+	};
 
-        ]} else {
-            vec![vk::PipelineColorBlendAttachmentState {
-                blend_enable: 0,
-                src_color_blend_factor: vk::BlendFactor::SrcColor,
-                dst_color_blend_factor:
-                vk::BlendFactor::OneMinusDstColor,
-                color_blend_op: vk::BlendOp::Add,
-                src_alpha_blend_factor: vk::BlendFactor::Zero,
-                dst_alpha_blend_factor: vk::BlendFactor::Zero,
-                alpha_blend_op: vk::BlendOp::Add,
-                color_write_mask: vk::ColorComponentFlags::all(),
-            }]
-        };
+	auto const colorBlendState = vk::PipelineColorBlendStateCreateInfo()
+		.setAttachmentCount(renderTarget->getColourAttachmentNum())
+		.setPAttachments(colorBlendAttachmentStates.data());
 
-        let color_blend_state = vk::PipelineColorBlendStateCreateInfo {
-            s_type: vk::StructureType::PipelineColorBlendStateCreateInfo,
-            p_next: ptr::null(),
-            flags: Default::default(),
-            logic_op_enable: 0,
-            logic_op: vk::LogicOp::Clear,
-            attachment_count: color_blend_attachment_states.len() as u32,
-            p_attachments: color_blend_attachment_states.as_ptr(),
-            blend_constants: [0.0, 0.0, 0.0, 0.0],
-        };
+	vk::DynamicState const dynamicState[2] = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };
 
-        let dynamic_state = [vk::DynamicState::Viewport, vk::DynamicState::Scissor];
-        let dynamic_state_info = vk::PipelineDynamicStateCreateInfo {
-            s_type: vk::StructureType::PipelineDynamicStateCreateInfo,
-            p_next: ptr::null(),
-            flags: Default::default(),
-            dynamic_state_count: dynamic_state.len() as u32,
-            p_dynamic_states: dynamic_state.as_ptr(),
-        };
+	auto const dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
+		.setDynamicStateCount(2)
+		.setPDynamicStates(dynamicState);
 
-        let layout_create_info = vk::PipelineLayoutCreateInfo {
-            s_type: vk::StructureType::PipelineLayoutCreateInfo,
-            p_next: ptr::null(),
-            flags: Default::default(),
-            set_layout_count: descriptor_set_layout.len() as u32,
-            p_set_layouts: descriptor_set_layout.as_ptr(),
-            push_constant_range_count: 0,
-            p_push_constant_ranges: ptr::null(),
-        };
+	std::vector<vk::DescriptorSetLayoutBinding> layoutBinding(layouts.size());
+	for (int i = 0; i < layouts.size(); i++) {
+		layoutBinding[i] = vk::DescriptorSetLayoutBinding()
+			.setBinding(layouts[i].binding)
+			.setDescriptorType(layouts[i].type)
+			.setDescriptorCount(1)
+			.setStageFlags(layouts[i].stage);
+	}
 
-        let pipeline_layout =
-            device.create_pipeline_layout(&layout_create_info, None).unwrap();
+	auto const descriptorLayout = vk::DescriptorSetLayoutCreateInfo()
+		.setBindingCount(layoutBinding.size())
+		.setPBindings(layoutBinding.data());
 
-        let graphic_pipeline_info = vk::GraphicsPipelineCreateInfo {
-            s_type: vk::StructureType::GraphicsPipelineCreateInfo,
-            p_next: ptr::null(),
-            flags: vk::PipelineCreateFlags::empty(),
-            stage_count: shader_stage_create_infos.len() as u32,
-            p_stages: shader_stage_create_infos.as_ptr(),
-            p_vertex_input_state: &vertex_input_state_info,
-            p_input_assembly_state: &vertex_input_assembly_state_info,
-            p_tessellation_state: ptr::null(),
-            p_viewport_state: &viewport_state_info,
-            p_rasterization_state: &rasterization_info,
-            p_multisample_state: &multisample_state_info,
-            p_depth_stencil_state: &depth_state_info,
-            p_color_blend_state: &color_blend_state,
-            p_dynamic_state: &dynamic_state_info,
-            layout: pipeline_layout,
-            render_pass: render_pass.clone(),
-            subpass: 0,
-            base_pipeline_handle: vk::Pipeline::null(),
-            base_pipeline_index: 0,
+	std::vector<vk::DescriptorSetLayout> descLayouts(1);
+	device->createDescriptorSetLayout(&descriptorLayout, nullptr, &descLayouts[0]);
+
+	auto const layoutCreateInfo = vk::PipelineLayoutCreateInfo()
+		.setSetLayoutCount(descLayouts.size())
+		.setPSetLayouts(descLayouts.data());
+	vk::PipelineLayout pipelineLayout;
+	device->createPipelineLayout(&layoutCreateInfo, nullptr, &pipelineLayout);
+
+	vk::PipelineCache pipelineCache;
+	vk::PipelineCacheCreateInfo const pipelineCacheInfo;
+	auto result = device->createPipelineCache(&pipelineCacheInfo, nullptr, &pipelineCache);
+	assert(result == vk::Result::eSuccess);
+
+	auto const graphicPipelineInfo = vk::GraphicsPipelineCreateInfo()
+		.setStageCount(2)
+		.setPStages(shaderStageCreateInfos)
+		.setPVertexInputState(&vertexInputStateInfo)
+		.setPInputAssemblyState(&vertexInputAssemblyStateInfo)
+		.setPViewportState(&viewportStateInfo)
+		.setPRasterizationState(&rasterizationInfo)
+		.setPMultisampleState(&multisampleStateInfo)
+		.setPDepthStencilState(&depthStateInfo)
+		.setPColorBlendState(&colorBlendState)
+		.setPDynamicState(&dynamicStateInfo)
+		.setLayout(pipelineLayout)
+		.setRenderPass(renderTarget->getRenderPass());
+
+	auto pipline = device->createGraphicsPipeline(pipelineCache, graphicPipelineInfo);
+
+	device->destroyShaderModule(vertRes.first);
+	device->destroyShaderModule(fragRes.first);
+	return new Shader(device, pipline, pipelineLayout, pipelineCache, descLayouts);
 }
 
-Shader::Shader()
+Shader::Shader(EnDevice * device, vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::PipelineCache pipelineCache, vector<vk::DescriptorSetLayout> desSetLayout)
 {
+	_device = device;
+	_pipeline = pipeline;
+	_pipelineLayout = pipelineLayout;
+	_pipelineCache = pipelineCache;
+	_desSetLayout = desSetLayout;
 }
 
 
 Shader::~Shader()
 {
+	_device->destroyPipeline(_pipeline);
+	_device->destroyPipelineCache(_pipelineCache);
+	_device->destroyPipelineLayout(_pipelineLayout);
+	for (auto& des : _desSetLayout) {
+		_device->destroyDescriptorSetLayout(des);
+	}
 }

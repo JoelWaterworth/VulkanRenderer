@@ -8,7 +8,7 @@ public:
 	EnDevice(std::nullptr_t)
 		: vk::Device(nullptr)
 	{}
-
+	static EnDevice* Create(vk::PhysicalDevice gpu, vk::DeviceCreateInfo createInfo, const vk::AllocationCallbacks* pAllocator = NULL);
 	vk::PhysicalDeviceMemoryProperties memoryProperties;
 
 	bool memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::MemoryPropertyFlags requirementsMask, uint32_t* typeIndex);

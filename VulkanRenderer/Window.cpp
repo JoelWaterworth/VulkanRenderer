@@ -3,6 +3,7 @@
 #include <string.h>  
 #include <tchar.h>  
 #include <iostream>
+#include "Engine.h"
 #include "vulkanRender/util.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -10,33 +11,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	PAINTSTRUCT ps;
 	HDC hdc;
 
-	Window * window = reinterpret_cast<Window*>(
+	Engine* engine = reinterpret_cast<Engine*>(
 		GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 
 	switch (message)
 	{
 	case WM_CLOSE:
-		window->Close();
+		engine->window->Close();
 		return 0;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
-		EndPaint(hWnd, &ps);
-		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		window->Close();
+		engine->window->Close();
 		break;
 	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
 		break;
 	}
 
-	return 0;
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 uint64_t	Window::_win32_class_id_counter = 0;
 
-Window::Window(uint32_t size_x, uint32_t size_y, std::string title)
+Window::Window(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine)
 {
 	HINSTANCE hInstance = GetModuleHandle(nullptr);
 	WNDCLASSEX wcex;
@@ -52,10 +48,10 @@ Window::Window(uint32_t size_x, uint32_t size_y, std::string title)
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+	wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wcex.lpszMenuName = NULL;
 	wcex.lpszClassName = _win32_class_name.c_str();
-	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_APPLICATION));
+	wcex.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
 
 	if (!RegisterClassEx(&wcex))
 	{
@@ -75,7 +71,7 @@ Window::Window(uint32_t size_x, uint32_t size_y, std::string title)
 		hInstance,
 		NULL
 	);
-	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)this);
+	SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)engine);
 	if (!hWnd)
 	{
 		MessageBox(NULL,
@@ -88,6 +84,7 @@ Window::Window(uint32_t size_x, uint32_t size_y, std::string title)
 	// hWnd: the value returned from CreateWindow  
 	// nCmdShow: the fourth parameter from WinMain  
 	ShowWindow(hWnd, SW_SHOW);
+	SetForegroundWindow(hWnd);
 	UpdateWindow(hWnd);
 }
 

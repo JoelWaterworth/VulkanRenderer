@@ -1,5 +1,14 @@
 #include "EnDevice.h"
+#include "util.h"
+#include <iostream>
 #include <functional>
+
+EnDevice * EnDevice::Create(vk::PhysicalDevice gpu, vk::DeviceCreateInfo createInfo, const vk::AllocationCallbacks * pAllocator)
+{
+	EnDevice* device = new EnDevice(nullptr);
+	VK_CHECK_RESULT(gpu.createDevice(&createInfo, pAllocator, device));
+	return device;
+}
 
 bool EnDevice::memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::MemoryPropertyFlags requirementsMask, uint32_t* typeIndex)
 {

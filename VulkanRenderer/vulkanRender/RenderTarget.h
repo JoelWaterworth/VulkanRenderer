@@ -24,7 +24,7 @@ public:
 			format(fmat),
 			usage(u),
 			descriptor(desInfo){};
-	static std::pair<std::vector<Attachment>, vk::DeviceMemory> createAttachement(EnDevice device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo> info);
+	static std::pair<std::vector<Attachment>, vk::DeviceMemory> createAttachement(EnDevice* device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo> info);
 private:
 	vk::Image image;
 	vk::Format format;
@@ -41,7 +41,7 @@ class RenderTarget
 {
 public:
 	RenderTarget(
-		EnDevice device, 
+		EnDevice* device, 
 		vk::Extent2D resloution, 
 		std::vector<AttachmentInfo> colourReq, 
 		AttachmentInfo DepthReq, 
@@ -49,13 +49,16 @@ public:
 	);
 	~RenderTarget();
 	inline vk::Extent2D getResolution() const { return resolution; };
+	inline size_t getColourAttachmentNum() const { return colourAttachments.size(); }
+	inline vk::RenderPass getRenderPass() const { return renderPass; }
+	inline std::vector<vk::Framebuffer> getFramebuffers() const { return framebuffers; }
 private:
 	vk::Extent2D resolution;
 	std::vector<Attachment> colourAttachments;
 	Attachment depthAttachment;
 	std::vector<vk::Framebuffer> framebuffers;
 	vk::DeviceMemory memory;
-	EnDevice device = nullptr;
+	EnDevice* _device = nullptr;
 	vk::Sampler sampler;
 	vk::RenderPass renderPass;
 };
