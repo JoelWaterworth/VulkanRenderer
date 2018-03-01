@@ -10,6 +10,10 @@
 #include "reasources\Shader.h"
 
 #define FRAME_LAG 3
+#ifndef VULKAN_HPP_NO_EXCEPTIONS
+#define VULKAN_HPP_NO_EXCEPTIONS
+#endif // !VULKAN_HPP_NO_EXCEPTIONS
+
 
 struct SurfaceCapabilities {
 	vk::SurfaceCapabilitiesKHR capabilities;
@@ -40,6 +44,11 @@ private:
 	vk::Queue graphicsQueue;
 	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo = vk::DebugReportCallbackCreateInfoEXT();
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
+	PFN_vkDebugMarkerSetObjectTagEXT     DebugMarkerSetObjectTag = VK_NULL_HANDLE;
+	PFN_vkDebugMarkerSetObjectNameEXT	 DebugMarkerSetObjectName = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerBeginEXT		 CmdDebugMarkerBegin = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerEndEXT			 CmdDebugMarkerEnd = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerInsertEXT		 CmdDebugMarkerInsert = VK_NULL_HANDLE;
 
 	std::vector<vk::CommandBuffer> _draw;
 	vk::CommandPool _commandPool;

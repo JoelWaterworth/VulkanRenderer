@@ -39,7 +39,7 @@ bool EnDevice::memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::Memor
 	});
 }
 
-std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlagBits properties)
+std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
 {
 	auto const buffer_info = vk::BufferCreateInfo()
         .setSize(size)
@@ -57,8 +57,8 @@ std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize 
 		&allocateInfo.memoryTypeIndex)) {
 		assert("no suitable memory type");
 	};
-
-    auto memory = this->allocateMemory(allocateInfo);
+	vk::DeviceMemory memory;
+	VK_CHECK_RESULT(this->allocateMemory(&allocateInfo, nullptr, &memory));
 	this->bindBufferMemory(buffer, memory, 0);
 	return std::pair<vk::Buffer, vk::DeviceMemory>(buffer, memory);
 }

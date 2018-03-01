@@ -54,12 +54,13 @@ Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned
 	int32_t vertexBufferSize = vertexData.size() * sizeof(float);
 	int32_t indexBufferSize = indexData.size() * sizeof(unsigned int);
 
-	std::pair<vk::Buffer, vk::DeviceMemory> vertex = device->allocateBuffer(vertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostVisible);
-	std::pair<vk::Buffer, vk::DeviceMemory> index = device->allocateBuffer(indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostVisible);
+	std::pair<vk::Buffer, vk::DeviceMemory> vertex = device->allocateBuffer(vertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+	std::pair<vk::Buffer, vk::DeviceMemory> index = device->allocateBuffer(indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 	this->vertexBuffer = vertex.first;
 	this->vertexMemory = vertex.second;
 	this->indexBuffer = index.first;
 	this->indexMemory = index.second;
+	this->indexBufferLen = indexData.size();
 	void* vertexPtr = device->mapMemory(vertexMemory, 0, vertexBufferSize);
 	memcpy(vertexPtr, vertexData.data(), (size_t)vertexBufferSize);
 	device->unmapMemory(vertex.second);
@@ -83,11 +84,11 @@ void Mesh::draw(vk::CommandBuffer commandBuffer) {
 			indexBuffer,
 			indexOffset,
 			vk::IndexType::eUint32);
-
+	
 	commandBuffer.drawIndexed(
 			indexBufferLen,
 			1,
 			0,
-			vertexOffset,
+			0,
 			1);
 }

@@ -2,7 +2,6 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
-
 #include "../Window.h"
 #include "util.h"
 
@@ -60,7 +59,7 @@ Renderer::Renderer(std::string title, Window* window) {
 	AttachmentInfo depthInfo = { vk::Format::eD16Unorm, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 };
 	renderTarget = new RenderTarget(_device, capabilities.capabilities.maxImageExtent, colourInfo, depthInfo, &swapchain.view);
 	resourceManger = new ResourceManger();
-	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.obj"));
+	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), std::vector<ShaderLayout>());
 	CreateFencesSemaphore();
 
@@ -334,7 +333,7 @@ void Renderer::CreateFencesSemaphore() {
 void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	auto const commandInfo = vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 
-	vk::ClearValue const clearValues[2] = { vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.2f, 0.0f, 0.0f } })),
+	vk::ClearValue const clearValues[2] = { vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 0.1f, 1.0f } })),
 											vk::ClearDepthStencilValue(1.0f, 0u) };
 	auto const passInfo = vk::RenderPassBeginInfo()
 		.setRenderPass(renderTarget->getRenderPass())
@@ -343,7 +342,8 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 		.setClearValueCount(2)
 		.setPClearValues(clearValues);
 
-	VK_CHECK_RESULT(commandBuffer.begin(&commandInfo));
+	auto res = commandBuffer.begin(&commandInfo);
+	assert(res == vk::Result::eSuccess);
 
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _shader->GetPipeline());
@@ -352,12 +352,14 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	auto const resolution = renderTarget->getResolution();
 
 	auto const viewport =
-		vk::Viewport().setWidth(resolution.width).setHeight(resolution.height).setMinDepth(0.0f).setMaxDepth(0.0f);
+		vk::Viewport().setWidth(resolution.width).setHeight(resolution.height).setMinDepth(0.0f).setMaxDepth(1.0f);
 	commandBuffer.setViewport(0, 1, &viewport);
 
 	vk::Rect2D const scissor(vk::Offset2D(0, 0), resolution);
 	commandBuffer.setScissor(0, 1, &scissor);
 	_mesh->draw(commandBuffer);
 	commandBuffer.endRenderPass();
+	commandBuffer.end();
+	assert(res == vk::Result::eSuccess);
 	currentBuffer = currentBuffer + 1;
 }

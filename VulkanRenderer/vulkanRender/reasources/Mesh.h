@@ -33,7 +33,7 @@ private:
 	vk::Buffer indexBuffer;
 	vk::Buffer vertexBuffer;
 	uint32_t indexBufferLen;
-	uint64_t indexOffset;
-	uint64_t vertexOffset;
+	uint64_t indexOffset = 0;
+	uint64_t vertexOffset = 0;
 };
 

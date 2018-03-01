@@ -175,6 +175,9 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 	};
 
 	auto const colorBlendState = vk::PipelineColorBlendStateCreateInfo()
+		.setLogicOpEnable(0)
+		.setLogicOp(vk::LogicOp::eClear)
+		.setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
 		.setAttachmentCount(renderTarget->getColourAttachmentNum())
 		.setPAttachments(colorBlendAttachmentStates.data());
 
@@ -201,8 +204,8 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 	device->createDescriptorSetLayout(&descriptorLayout, nullptr, &descLayouts[0]);
 
 	auto const layoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(descLayouts.size())
-		.setPSetLayouts(descLayouts.data());
+		.setSetLayoutCount(0)
+		.setPSetLayouts(nullptr);
 	vk::PipelineLayout pipelineLayout;
 	device->createPipelineLayout(&layoutCreateInfo, nullptr, &pipelineLayout);
 

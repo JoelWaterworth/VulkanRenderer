@@ -13,7 +13,7 @@ public:
 
 	bool memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::MemoryPropertyFlags requirementsMask, uint32_t* typeIndex);
 
-	std::pair<vk::Buffer, vk::DeviceMemory> allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlagBits properties);
+	std::pair<vk::Buffer, vk::DeviceMemory> allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 private:
 	
 };
