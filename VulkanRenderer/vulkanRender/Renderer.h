@@ -4,10 +4,12 @@
 
 #include "EnDevice.h"
 #include "RenderTarget.h"
-#include "reasources\ResourceManger.h"
+#include "resources\ResourceManger.h"
 #include <string>
-#include "reasources\Mesh.h"
-#include "reasources\Shader.h"
+#include "resources\Mesh.h"
+#include "resources\Shader.h"
+#include "resources\uniform.h"
+#include "resources\Material.h"
 
 #define FRAME_LAG 3
 #ifndef VULKAN_HPP_NO_EXCEPTIONS
@@ -63,6 +65,8 @@ private:
 	ResourceManger* resourceManger;
 	Mesh* _mesh = nullptr;
 	Shader* _shader = nullptr;
+	Material* _material = nullptr;
+	Uniform* _unfirom = nullptr;
 	vk::Instance instance = nullptr;
 	EnDevice* _device = nullptr;
 	SurfaceCapabilities capabilities;

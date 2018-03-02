@@ -30,25 +30,31 @@
     <ClCompile Include="vulkanRender\EnDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vulkanRender\reasources\Mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vulkanRender\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vulkanRender\RenderTarget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vulkanRender\reasources\ResourceManger.cpp">
+    <ClCompile Include="vulkanRender\resources\Material.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vulkanRender\reasources\Resource.cpp">
+    <ClCompile Include="vulkanRender\resources\Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
+    <ClCompile Include="vulkanRender\resources\Resource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vulkanRender\reasources\Shader.cpp">
+    <ClCompile Include="vulkanRender\resources\ResourceManger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkanRender\resources\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkanRender\resources\Uniform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vulkanRender\resources\UniformBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,19 +77,25 @@
     <ClInclude Include="vulkanRender\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vulkanRender\reasources\Mesh.h">
+    <ClInclude Include="vulkanRender\resources\Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vulkanRender\reasources\ResourceManger.h">
+    <ClInclude Include="vulkanRender\resources\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vulkanRender\reasources\Resource.h">
+    <ClInclude Include="vulkanRender\resources\Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Material.h">
+    <ClInclude Include="vulkanRender\resources\ResourceManger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vulkanRender\reasources\Shader.h">
+    <ClInclude Include="vulkanRender\resources\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkanRender\resources\Uniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vulkanRender\resources\UniformBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,8 +2,10 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#include <glm\glm.hpp>
 #include "../Window.h"
 #include "util.h"
+#include "resources\UniformBuffer.h"
 
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
 PFN_vkDestroyDebugReportCallbackEXT		DestroyDebugReportCallbackEXT = VK_NULL_HANDLE;
@@ -60,13 +62,19 @@ Renderer::Renderer(std::string title, Window* window) {
 	renderTarget = new RenderTarget(_device, capabilities.capabilities.maxImageExtent, colourInfo, depthInfo, &swapchain.view);
 	resourceManger = new ResourceManger();
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
-	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), std::vector<ShaderLayout>());
+	std::vector<ShaderLayout> shaderLayout(1);
+	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, 0, 0);
+	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), shaderLayout);
+	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
+	std::vector<UniformBinding> uniforms = { {_unfirom, 0} };
+	_material = Material::CreateMaterialWithShader(_device, _shader, uniforms);
 	CreateFencesSemaphore();
 
 	prepared = true;
 }
 
 Renderer::~Renderer() {
+	delete _unfirom;
 	delete _shader;
 	delete _mesh;
 	delete resourceManger;
@@ -347,7 +355,7 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _shader->GetPipeline());
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _shader->GetPipelineLayout(), 0, 0, nullptr, 0, nullptr);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _shader->GetPipelineLayout(), 0, 1, &_material->getDescriptorSet(), 0, nullptr);
 
 	auto const resolution = renderTarget->getResolution();
 

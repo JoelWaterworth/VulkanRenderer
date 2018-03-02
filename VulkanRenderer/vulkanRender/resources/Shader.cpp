@@ -186,7 +186,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 	auto const dynamicStateInfo = vk::PipelineDynamicStateCreateInfo()
 		.setDynamicStateCount(2)
 		.setPDynamicStates(dynamicState);
-
+	std::vector<vk::DescriptorType> types(layouts.size());
 	std::vector<vk::DescriptorSetLayoutBinding> layoutBinding(layouts.size());
 	for (int i = 0; i < layouts.size(); i++) {
 		layoutBinding[i] = vk::DescriptorSetLayoutBinding()
@@ -194,6 +194,8 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 			.setDescriptorType(layouts[i].type)
 			.setDescriptorCount(1)
 			.setStageFlags(layouts[i].stage);
+
+		types[i] = layouts[i].type;
 	}
 
 	auto const descriptorLayout = vk::DescriptorSetLayoutCreateInfo()
@@ -204,8 +206,8 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 	device->createDescriptorSetLayout(&descriptorLayout, nullptr, &descLayouts[0]);
 
 	auto const layoutCreateInfo = vk::PipelineLayoutCreateInfo()
-		.setSetLayoutCount(0)
-		.setPSetLayouts(nullptr);
+		.setSetLayoutCount(1)
+		.setPSetLayouts(descLayouts.data());
 	vk::PipelineLayout pipelineLayout;
 	device->createPipelineLayout(&layoutCreateInfo, nullptr, &pipelineLayout);
 
@@ -232,17 +234,18 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 
 	device->destroyShaderModule(vertRes.first);
 	device->destroyShaderModule(fragRes.first);
-	return new Shader(device, pipline, pipelineLayout, pipelineCache, descLayouts);
+	auto shader = new Shader();
+	shader->_device = device;
+	shader->_pipeline = pipline;
+	shader->_pipelineLayout = pipelineLayout;
+	shader->_pipelineCache = pipelineCache;
+	shader->_desSetLayout = descLayouts;
+	shader->_types = types;
+	return shader;
 }
 
-Shader::Shader(EnDevice * device, vk::Pipeline pipeline, vk::PipelineLayout pipelineLayout, vk::PipelineCache pipelineCache, vector<vk::DescriptorSetLayout> desSetLayout)
-{
-	_device = device;
-	_pipeline = pipeline;
-	_pipelineLayout = pipelineLayout;
-	_pipelineCache = pipelineCache;
-	_desSetLayout = desSetLayout;
-}
+Shader::Shader()
+{}
 
 
 Shader::~Shader()
