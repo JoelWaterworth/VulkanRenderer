@@ -10,6 +10,9 @@
 #include "Shader.h"
 #include "UniformInterface.h"
 #include "resources\Material.h"
+#include "resources\Texture.h"
+#include "resources\Resource.h"
+#include "resources\ResourceManger.h"
 
 #define FRAME_LAG 3
 #ifndef VULKAN_HPP_NO_EXCEPTIONS

@@ -137,7 +137,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setDepthBiasSlopeFactor(0.0f)
 		.setDepthBiasEnable(0)
 		.setFrontFace(vk::FrontFace::eCounterClockwise)
-		.setLineWidth(0.0f)
+		.setLineWidth(1.0f)
 		.setPolygonMode(vk::PolygonMode::eFill)
 		.setRasterizerDiscardEnable(0);
 
@@ -161,7 +161,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setMaxDepthBounds(1.0f)
 		.setMinDepthBounds(0.0f);
 
-	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getColourAttachmentNum());
+	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getAttachmentNum() - 1);
 	for (auto& a : colorBlendAttachmentStates) {
 		a = vk::PipelineColorBlendAttachmentState()
 			.setBlendEnable(0)
@@ -178,7 +178,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setLogicOpEnable(0)
 		.setLogicOp(vk::LogicOp::eClear)
 		.setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
-		.setAttachmentCount(renderTarget->getColourAttachmentNum())
+		.setAttachmentCount(colorBlendAttachmentStates.size())
 		.setPAttachments(colorBlendAttachmentStates.data());
 
 	vk::DynamicState const dynamicState[2] = { vk::DynamicState::eViewport, vk::DynamicState::eScissor };

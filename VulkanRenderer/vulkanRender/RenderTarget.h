@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include "EnDevice.h"
+#include "resources\Texture.h"
 
 struct AttachmentInfo {
 	vk::Format format;
@@ -40,22 +41,26 @@ public:
 class RenderTarget
 {
 public:
-	RenderTarget(
+	RenderTarget();
+	static RenderTarget* Create(
 		EnDevice* device, 
 		vk::Extent2D resloution, 
 		std::vector<AttachmentInfo> colourReq, 
 		AttachmentInfo DepthReq, 
 		std::vector<vk::ImageView>* framebuffers = nullptr
 	);
+	static RenderTarget* CreateFromTextures(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
+	void SetUp(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
 	~RenderTarget();
+
+	inline std::vector<Texture*> getAttachments() const { return attachments; }
 	inline vk::Extent2D getResolution() const { return resolution; };
-	inline size_t getColourAttachmentNum() const { return colourAttachments.size(); }
+	inline size_t getAttachmentNum() const { return attachments.size(); }
 	inline vk::RenderPass getRenderPass() const { return renderPass; }
 	inline std::vector<vk::Framebuffer> getFramebuffers() const { return framebuffers; }
 private:
 	vk::Extent2D resolution;
-	std::vector<Attachment> colourAttachments;
-	Attachment depthAttachment;
+	std::vector<Texture*> attachments;
 	std::vector<vk::Framebuffer> framebuffers;
 	vk::DeviceMemory memory;
 	EnDevice* _device = nullptr;

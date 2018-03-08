@@ -5,6 +5,7 @@
 #include <glm\glm.hpp>
 #include "../Window.h"
 #include "util.h"
+
 #include "resources\UniformBuffer.h"
 
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
@@ -57,10 +58,15 @@ Renderer::Renderer(std::string title, Window* window) {
 	initDevice();
 	GetCapabilities();
 	CreateSwapchain();
-	std::vector<AttachmentInfo> colourInfo = { { capabilities.format.format, vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::ePresentSrcKHR, 1 }};
-	AttachmentInfo depthInfo = { vk::Format::eD16Unorm, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 };
-	renderTarget = new RenderTarget(_device, capabilities.capabilities.maxImageExtent, colourInfo, depthInfo, &swapchain.view);
-	resourceManger = new ResourceManger();
+	resourceManger = new ResourceManger(_device);
+	std::vector<AttachmentInfo> colourInfo = { { capabilities.format.format, vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::ePresentSrcKHR, 1 }, { vk::Format::eD16Unorm, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
+	std::vector<Texture*> attachments(colourInfo.size());
+	for (int i = 0; i < attachments.size(); i++) {
+		attachments[i] = Texture::Create(_device, capabilities.capabilities.maxImageExtent, colourInfo[i].format, colourInfo[i].usage, colourInfo[i].imageLayout, nullptr);
+	}
+	resourceManger->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
+	renderTarget = RenderTarget::CreateFromTextures(_device, attachments, &swapchain.view);
+	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, 0, 0);
@@ -74,13 +80,24 @@ Renderer::Renderer(std::string title, Window* window) {
 }
 
 Renderer::~Renderer() {
+	_device->waitIdle();
 	delete _unfirom;
 	delete _shader;
 	delete _mesh;
 	delete resourceManger;
 	delete renderTarget;
+	delete _material;
+	_device->waitForFences(FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
+	for (int i = 0; i < FRAME_LAG; i++) {
+		_device->destroySemaphore(_completeRender[i]);
+		_device->destroySemaphore(_presentComplete[i]);
+		_device->destroyFence(_fences[i]);
+	}
 	_device->destroyCommandPool(_commandPool);
 	_device->destroySwapchainKHR(swapchain.handle);
+	for (auto frame : swapchain.view) {
+		_device->destroyImageView(frame);
+	}
 	instance.destroySurfaceKHR(surface);
 	_device->destroy();
 	instance.destroy();
@@ -144,10 +161,9 @@ void Renderer::initInstance(std::string title) {
 	instanceExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
 
-#if defined(_DEBUG)
 	instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	layer.push_back("VK_LAYER_LUNARG_standard_validation");
-#endif
+
 	dbgCreateInfo
 		.setPfnCallback((PFN_vkDebugReportCallbackEXT)vulkanDebugCallback)
 		.setFlags(vk::DebugReportFlagBitsEXT::eWarning);

@@ -146,6 +146,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="vulkanRender\resources\Texture.cpp" />
     <ClCompile Include="vulkanRender\resources\UniformBuffer.cpp" />
     <ClCompile Include="vulkanRender\UniformInterface.cpp" />
     <ClCompile Include="vulkanRender\resources\Material.cpp" />
@@ -162,6 +163,7 @@
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="vulkanRender\resources\Texture.h" />
     <ClInclude Include="vulkanRender\resources\UniformBuffer.h" />
     <ClInclude Include="vulkanRender\UniformInterface.h" />
     <ClInclude Include="vulkanRender\resources\Material.h" />

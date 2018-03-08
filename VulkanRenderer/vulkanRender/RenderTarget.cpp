@@ -1,14 +1,21 @@
 #include "RenderTarget.h"
 #include "util.h"
+#include "resources\Resource.h"
+#include "resources\Texture.h"
 #include <iostream>
 #include <functional>
 #include <numeric>
 
 
-RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
+RenderTarget::RenderTarget()
 {
-	this->resolution = r;
-	_device = d;
+}
+
+RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
+{
+	RenderTarget* rt = new RenderTarget();
+	rt->resolution = r;
+	rt->_device = d;
 	if (colourReq.size() == 0) {
 		assert("colourReq cannot be empty");
 	}
@@ -29,39 +36,47 @@ RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentIn
 			.setCompareEnable(0)
 			.setCompareOp(vk::CompareOp::eNever)
 			.setUnnormalizedCoordinates(0);
-	this->sampler = _device->createSampler(samplerInfo);
+	rt->sampler = d->createSampler(samplerInfo);
 
 	std::vector<AttachmentInfo> Req = colourReq;
 	Req.push_back(depthReq);
-	std::pair<std::vector<Attachment>, vk::DeviceMemory> ret = Attachment::createAttachement(_device, resolution, sampler, Req);
-	std::vector<Attachment> attachments = ret.first;
-	this->memory = ret.second;
+	rt->attachments.resize(Req.size());
+	for (int i = 0; i < rt->attachments.size(); i++) {
+		rt->attachments[i] = Texture::Create(d, r, Req[i].format, Req[i].usage, Req[i].imageLayout, &rt->sampler);
+	}
 
-	std::vector<vk::AttachmentDescription> renderpassAttachments(Req.size());
-	for (int i = 0; i < Req.size(); i++) {
+	return rt;
+}
+
+void RenderTarget::SetUp(EnDevice * device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews)
+{
+	std::vector<vk::AttachmentDescription> renderpassAttachments(attachments.size());
+	for (int i = 0; i < attachments.size(); i++) {
 		renderpassAttachments[i] = vk::AttachmentDescription()
-			.setFormat(Req[i].format)
+			.setFormat(attachments[i]->getFormat())
 			.setSamples(vk::SampleCountFlagBits::e1)
 			.setLoadOp(vk::AttachmentLoadOp::eClear)
 			.setStoreOp(vk::AttachmentStoreOp::eStore)
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
 			.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
 			.setInitialLayout(vk::ImageLayout::eUndefined)
-			.setFinalLayout(Req[i].imageLayout);
+			.setFinalLayout(attachments[i]->getImageLayout());
 	}
 
-	std::vector<vk::AttachmentReference> colorAttachmentsRef(colourReq.size());
-	for (int i = 0; i < colourReq.size(); i++) {
+	uint32_t colourAttachmentCount = attachments.size() - 1;
+
+	std::vector<vk::AttachmentReference> colorAttachmentsRef(colourAttachmentCount);
+	for (int i = 0; i < colourAttachmentCount; i++) {
 		colorAttachmentsRef[i] = vk::AttachmentReference()
 			.setAttachment(i)
 			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 	}
 	auto const depthAttachmentsRef = vk::AttachmentReference()
-		.setAttachment(colourReq.size())
+		.setAttachment(colourAttachmentCount)
 		.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 	auto const subpass = vk::SubpassDescription()
-            .setColorAttachmentCount(colourReq.size())
+            .setColorAttachmentCount(colorAttachmentsRef.size())
             .setPColorAttachments(colorAttachmentsRef.data())
             .setPDepthStencilAttachment(&depthAttachmentsRef)
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
@@ -90,10 +105,8 @@ RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentIn
 	this->renderPass = _device->createRenderPass(deferredRenderPassCreateInfo);
 
 	if (frameBufferImageViews) {
-		this->depthAttachment = attachments.back();
-		attachments.pop_back();
 		for (auto& present_image_view : *frameBufferImageViews) {
-			vk::ImageView framebufferAttachments[2] = { present_image_view , depthAttachment.getDescriptor().imageView };
+			vk::ImageView framebufferAttachments[2] = { present_image_view, attachments[attachments.size()-1]->getImageView() };
 			auto const frameBufferCreateInfo = vk::FramebufferCreateInfo()
 				.setRenderPass(renderPass)
 				.setAttachmentCount(2)
@@ -106,7 +119,7 @@ RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentIn
 	} else {
 		std::vector<vk::ImageView> attachmentsViews(attachments.size());
 		for (int i = 0; i < attachments.size(); i++) {
-			attachmentsViews[i] = attachments[i].getDescriptor().imageView;
+			attachmentsViews[i] = attachments[i]->getImageView();
 		}
 
 		auto const frameBufferCreateInfo = vk::FramebufferCreateInfo()
@@ -117,10 +130,18 @@ RenderTarget::RenderTarget(EnDevice* d, vk::Extent2D r, std::vector<AttachmentIn
 			.setHeight(resolution.height)
 			.setLayers(1);
 		this->framebuffers.push_back(_device->createFramebuffer(frameBufferCreateInfo));
-		this->depthAttachment = attachments.back();
 		attachments.pop_back();
 	}
-	this->colourAttachments = attachments;
+}
+
+RenderTarget* RenderTarget::CreateFromTextures(EnDevice * device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews)
+{
+	RenderTarget* rt = new RenderTarget();
+	rt->resolution = attachments[0]->getResloution();
+	rt->_device = device;
+	rt->attachments = attachments;
+	rt->SetUp(device, attachments, frameBufferImageViews);
+	return rt;
 }
 
 RenderTarget::~RenderTarget() {
@@ -131,14 +152,9 @@ RenderTarget::~RenderTarget() {
 	_device->destroyRenderPass(renderPass);
 	_device->destroySampler(sampler);
 
-	for (Attachment attachment : colourAttachments) {
-		_device->destroyImageView(attachment.getDescriptor().imageView);
-		_device->destroyImage(attachment.getImage());
+	for (auto attachment : attachments) {
+		delete attachment;
 	}
-
-	_device->destroyImageView(depthAttachment.getDescriptor().imageView);
-	_device->destroyImage(depthAttachment.getImage());
-	_device->freeMemory(memory);
 }
 
 Attachment::Attachment()
