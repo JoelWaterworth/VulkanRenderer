@@ -1,8 +1,8 @@
 #pragma once
-#include "Uniform.h"
+#include "../UniformInterface.h"
 #include "Resource.h"
 
-class UniformBuffer : public Uniform, public Resource
+class UniformBuffer : public UniformInterface, public Resource
 {
 public:
 	UniformBuffer(EnDevice* device, vk::DescriptorBufferInfo descriptor, vk::DeviceMemory memory, vk::Buffer buffer);

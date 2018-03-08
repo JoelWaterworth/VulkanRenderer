@@ -147,7 +147,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="vulkanRender\resources\UniformBuffer.cpp" />
-    <ClCompile Include="vulkanRender\resources\Uniform.cpp" />
+    <ClCompile Include="vulkanRender\UniformInterface.cpp" />
     <ClCompile Include="vulkanRender\resources\Material.cpp" />
     <ClCompile Include="vulkanRender\resources\Resource.cpp" />
     <ClCompile Include="vulkanRender\EnDevice.cpp" />
@@ -157,13 +157,13 @@
     <ClCompile Include="vulkanRender\Renderer.cpp" />
     <ClCompile Include="vulkanRender\RenderTarget.cpp" />
     <ClCompile Include="vulkanRender\resources\ResourceManger.cpp" />
-    <ClCompile Include="vulkanRender\resources\Shader.cpp" />
+    <ClCompile Include="vulkanRender\Shader.cpp" />
     <ClCompile Include="vulkanRender\util.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vulkanRender\resources\UniformBuffer.h" />
-    <ClInclude Include="vulkanRender\resources\Uniform.h" />
+    <ClInclude Include="vulkanRender\UniformInterface.h" />
     <ClInclude Include="vulkanRender\resources\Material.h" />
     <ClInclude Include="vulkanRender\resources\Resource.h" />
     <ClInclude Include="vulkanRender\EnDevice.h" />
@@ -172,7 +172,7 @@
     <ClInclude Include="vulkanRender\Renderer.h" />
     <ClInclude Include="vulkanRender\RenderTarget.h" />
     <ClInclude Include="vulkanRender\resources\ResourceManger.h" />
-    <ClInclude Include="vulkanRender\resources\Shader.h" />
+    <ClInclude Include="vulkanRender\Shader.h" />
     <ClInclude Include="vulkanRender\util.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

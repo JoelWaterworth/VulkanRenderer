@@ -4,8 +4,8 @@
 #include <vulkan/vk_sdk_platform.h>
 #include <experimental/filesystem>
 
-#include "../EnDevice.h"
-#include "../RenderTarget.h"
+#include "EnDevice.h"
+#include "RenderTarget.h"
 
 using namespace std::experimental::filesystem;
 using namespace std;

@@ -173,6 +173,35 @@ void Renderer::initInstance(std::string title) {
 void Renderer::initDebug() {
 	CreateDebugReportCallbackEXT = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 	CreateDebugReportCallbackEXT(this->instance, reinterpret_cast<const VkDebugReportCallbackCreateInfoEXT*>(&dbgCreateInfo), NULL, &debugReport);
+
+	SetupDebugMarkers();
+}
+
+void Renderer::SetupDebugMarkers() {
+	bool debugExtensionPresent = false;
+	uint32_t extensionCount = 0;
+	gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, nullptr);
+	std::vector<vk::ExtensionProperties> extensions(extensionCount);
+	gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+	for (auto extension : extensions) {
+		if (strcmp(extension.extensionName, VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == 0) {
+			debugExtensionPresent = true;
+			break;
+		}
+	}
+
+	if (debugExtensionPresent) {
+		debugMarkerSetObjectTag = reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(_device->getProcAddr("vkDebugMarkerSetObjectTagEXT"));
+		debugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)_device->getProcAddr("vkDebugMarkerSetObjectNameEXT");
+		cmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)_device->getProcAddr("vkCmdDebugMarkerBeginEXT");
+		cmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)_device->getProcAddr("vkCmdDebugMarkerEndEXT");
+		cmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)_device->getProcAddr("vkCmdDebugMarkerInsertEXT");
+		debugMarkerActive = debugMarkerSetObjectTag != nullptr;
+	} else {
+		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled.";
+		std::cout << "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)" << std::endl;
+	}
 }
 
 void Renderer::initDevice() {
@@ -188,9 +217,12 @@ void Renderer::initDevice() {
 	}
 
 	this->gpu = physicalDevices[0];
+
+
 	gpu.getQueueFamilyProperties(&queueFamilyCount, NULL);
 	std::vector<vk::QueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
 	gpu.getQueueFamilyProperties(&queueFamilyCount, queueFamilyProperties.data());
+
 
 	std::vector<vk::Bool32> supportPresents(queueFamilyCount);
 	graphicsQueueFamilyIndex = UINT32_MAX;
@@ -370,4 +402,15 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	commandBuffer.end();
 	assert(res == vk::Result::eSuccess);
 	currentBuffer = currentBuffer + 1;
+}
+
+void Renderer::SetObjectName(uint64_t objectId, vk::DebugReportObjectTypeEXT objectType, const char * name)
+{
+	if (debugMarkerActive) {
+		auto const ObjectNameInfo = vk::DebugMarkerObjectNameInfoEXT()
+			.setObject(objectId)
+			.setObjectType(objectType)
+			.setPObjectName(name);
+		debugMarkerSetObjectName(*_device, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&ObjectNameInfo));
+	}
 }

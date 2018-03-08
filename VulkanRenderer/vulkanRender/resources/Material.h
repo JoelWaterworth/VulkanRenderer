@@ -2,13 +2,13 @@
 #include "Resource.h"
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_sdk_platform.h>
-#include "Shader.h"
-#include "Uniform.h"
+#include "../Shader.h"
+#include "../UniformInterface.h"
 
 using namespace std;
 
 struct UniformBinding {
-	Uniform* uniform;
+	UniformInterface* uniform;
 	uint32_t binding;
 };
 

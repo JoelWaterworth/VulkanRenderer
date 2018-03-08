@@ -7,8 +7,8 @@
 #include "resources\ResourceManger.h"
 #include <string>
 #include "resources\Mesh.h"
-#include "resources\Shader.h"
-#include "resources\uniform.h"
+#include "Shader.h"
+#include "UniformInterface.h"
 #include "resources\Material.h"
 
 #define FRAME_LAG 3
@@ -34,23 +34,27 @@ public:
 
 	void Run();
 private:
-	bool prepared = false;
 	void initInstance(std::string title);
 	void initDebug();
+	void SetupDebugMarkers();
 	void initDevice();
 	void GetCapabilities();
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
 	void BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer);
+	void SetObjectName(uint64_t objectId, vk::DebugReportObjectTypeEXT objectType, const char *name);
+	bool debugMarkerActive = false;
+	bool prepared = false;
 	vk::Queue presentQueue;
 	vk::Queue graphicsQueue;
 	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo = vk::DebugReportCallbackCreateInfoEXT();
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
-	PFN_vkDebugMarkerSetObjectTagEXT     DebugMarkerSetObjectTag = VK_NULL_HANDLE;
-	PFN_vkDebugMarkerSetObjectNameEXT	 DebugMarkerSetObjectName = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerBeginEXT		 CmdDebugMarkerBegin = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerEndEXT			 CmdDebugMarkerEnd = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerInsertEXT		 CmdDebugMarkerInsert = VK_NULL_HANDLE;
+
+	PFN_vkDebugMarkerSetObjectTagEXT     debugMarkerSetObjectTag = VK_NULL_HANDLE;
+	PFN_vkDebugMarkerSetObjectNameEXT	 debugMarkerSetObjectName = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerBeginEXT		 cmdDebugMarkerBegin = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerEndEXT			 cmdDebugMarkerEnd = VK_NULL_HANDLE;
+	PFN_vkCmdDebugMarkerInsertEXT		 cmdDebugMarkerInsert = VK_NULL_HANDLE;
 
 	std::vector<vk::CommandBuffer> _draw;
 	vk::CommandPool _commandPool;
@@ -66,7 +70,7 @@ private:
 	Mesh* _mesh = nullptr;
 	Shader* _shader = nullptr;
 	Material* _material = nullptr;
-	Uniform* _unfirom = nullptr;
+	UniformInterface* _unfirom = nullptr;
 	vk::Instance instance = nullptr;
 	EnDevice* _device = nullptr;
 	SurfaceCapabilities capabilities;
