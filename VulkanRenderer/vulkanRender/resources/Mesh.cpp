@@ -50,7 +50,7 @@ Mesh* Mesh::Create(EnDevice* device, path p)
 
 Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData)
 {
-	this->device = device;
+	this->_device = device;
 	int32_t vertexBufferSize = vertexData.size() * sizeof(float);
 	int32_t indexBufferSize = indexData.size() * sizeof(unsigned int);
 
@@ -71,10 +71,10 @@ Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned
 
 Mesh::~Mesh()
 {
-	device->destroyBuffer(indexBuffer);
-	device->destroyBuffer(vertexBuffer);
-	device->freeMemory(indexMemory);
-	device->freeMemory(vertexMemory);
+	_device->destroyBuffer(indexBuffer);
+	_device->destroyBuffer(vertexBuffer);
+	_device->freeMemory(indexMemory);
+	_device->freeMemory(vertexMemory);
 }
 
 void Mesh::draw(vk::CommandBuffer commandBuffer) {

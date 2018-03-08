@@ -4,7 +4,6 @@
 
 #include "EnDevice.h"
 #include "RenderTarget.h"
-#include "resources\ResourceManger.h"
 #include <string>
 #include "resources\Mesh.h"
 #include "Shader.h"
@@ -12,7 +11,6 @@
 #include "resources\Material.h"
 #include "resources\Texture.h"
 #include "resources\Resource.h"
-#include "resources\ResourceManger.h"
 
 #define FRAME_LAG 3
 #ifndef VULKAN_HPP_NO_EXCEPTIONS
@@ -69,7 +67,6 @@ private:
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 	uint32_t graphicsQueueFamilyIndex;
-	ResourceManger* resourceManger;
 	Mesh* _mesh = nullptr;
 	Shader* _shader = nullptr;
 	Material* _material = nullptr;

@@ -2,11 +2,23 @@
 #include "util.h"
 #include <iostream>
 #include <functional>
+#include "resources\Resource.h"
+
+void EnDevice::deallocateAll()
+{
+	for (auto allocation : allocations) {
+		for (int i = 0; i < allocation.resources.size(); i++) {
+			allocation.resources[i]->destroy(this);
+		}
+		freeMemory(allocation.allocation);
+	}
+}
 
 EnDevice * EnDevice::Create(vk::PhysicalDevice gpu, vk::DeviceCreateInfo createInfo, const vk::AllocationCallbacks * pAllocator)
 {
 	EnDevice* device = new EnDevice(nullptr);
 	VK_CHECK_RESULT(gpu.createDevice(&createInfo, pAllocator, device));
+	device->allocateBlock(vk::MemoryPropertyFlagBits::eDeviceLocal);
 	return device;
 }
 
@@ -61,4 +73,51 @@ std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize 
 	VK_CHECK_RESULT(this->allocateMemory(&allocateInfo, nullptr, &memory));
 	this->bindBufferMemory(buffer, memory, 0);
 	return std::pair<vk::Buffer, vk::DeviceMemory>(buffer, memory);
+}
+
+void EnDevice::attachResource(Resource * resource, vk::MemoryPropertyFlags memoryFlags)
+{
+	Block* b = &allocations[allocations.size() - 1];
+	resource->_offset = b->currentOffset;
+	resource->bindMemory(this, b->allocation, 0);
+	b->resources.push_back(resource);
+	b->currentOffset += resource->getRequirments().size;
+}
+
+void EnDevice::allocateBlock(vk::MemoryPropertyFlags memoryFlags)
+{
+	auto const memoryInfo = vk::MemoryAllocateInfo()
+		.setAllocationSize(blockSize * 1024 * 1024)
+		.setMemoryTypeIndex(7);
+	vk::DeviceMemory memory = allocateMemory(memoryInfo);
+	allocations.push_back({ memory, vector<Resource*>(), 0 });
+}
+
+void EnDevice::allocate(const vector<Resource*>& resources, vk::MemoryPropertyFlags memoryFlags)
+{
+	uint32_t size = 0;
+	for (auto resource : resources) {
+		resource->_offset = size;
+		size += resource->getRequirments().size;
+	}
+	vk::MemoryRequirements memReq = resources[0]->getRequirments();
+
+	uint32_t memoryIndex = 0;
+
+	if (!memoryTypeFromProperties(
+		memReq,
+		memoryFlags,
+		&memoryIndex)) {
+		assert("no suitable memory type");
+	};
+
+	auto const memoryInfo = vk::MemoryAllocateInfo()
+		.setAllocationSize(size)
+		.setMemoryTypeIndex(memoryIndex);
+	vk::DeviceMemory memory = allocateMemory(memoryInfo);
+	for (auto resource : resources) {
+		resource->bindMemory(this, memory, 0);
+		resource->postAllocation(this);
+	}
+	//allocations.push_back({ memory, resources });
 }

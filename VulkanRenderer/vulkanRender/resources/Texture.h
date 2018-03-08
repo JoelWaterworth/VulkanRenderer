@@ -8,7 +8,6 @@ class Texture : public Resource, public UniformInterface
 {
 public:
 	Texture();
-	~Texture();
 	static Texture* Create(
 		EnDevice* device,
 		vk::Extent2D extent,
@@ -16,8 +15,8 @@ public:
 		vk::ImageUsageFlags _usage = vk::ImageUsageFlagBits::eColorAttachment,
 		vk::ImageLayout imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
 		vk::Sampler* sampler = nullptr);
-	virtual void bindMemory(vk::DeviceMemory memory);
-	virtual bool postAllocation();
+	virtual void destroy(EnDevice* device);
+	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
 	inline vk::ImageView getImageView() const { return _imageView; }
 	inline vk::Image getImage() const { return _image; }
 	inline vk::Format getFormat() const { return _format; }

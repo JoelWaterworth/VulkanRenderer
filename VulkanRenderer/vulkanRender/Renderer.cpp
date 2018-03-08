@@ -58,13 +58,38 @@ Renderer::Renderer(std::string title, Window* window) {
 	initDevice();
 	GetCapabilities();
 	CreateSwapchain();
-	resourceManger = new ResourceManger(_device);
-	std::vector<AttachmentInfo> colourInfo = { { capabilities.format.format, vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::ePresentSrcKHR, 1 }, { vk::Format::eD16Unorm, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
-	std::vector<Texture*> attachments(colourInfo.size());
-	for (int i = 0; i < attachments.size(); i++) {
-		attachments[i] = Texture::Create(_device, capabilities.capabilities.maxImageExtent, colourInfo[i].format, colourInfo[i].usage, colourInfo[i].imageLayout, nullptr);
+	/*
+	std::vector<AttachmentInfo> defferedAttachmentInfo = {
+		{ vk::Format::eR16G16B16A16Sfloat,	vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
+		{ vk::Format::eR16G16B16A16Sfloat,	vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
+		{ vk::Format::eR8G8B8A8Unorm,		vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
+		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 }
+	};
+
+	std::vector<Texture*> attachments(defferedAttachmentInfo.size());
+	for (int i = 0; i < defferedAttachmentInfo.size(); i++) {
+		attachments[i] = Texture::Create(
+			_device,
+			capabilities.capabilities.maxImageExtent,
+			defferedAttachmentInfo[i].format,
+			defferedAttachmentInfo[i].usage,
+			defferedAttachmentInfo[i].imageLayout,
+			nullptr);
 	}
-	resourceManger->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
+	
+	_device->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
+	renderTarget = RenderTarget::CreateFromTextures(_device, attachments);
+	*/
+
+	std::vector<AttachmentInfo> attachmentInfo = {
+		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::ePresentSrcKHR, 1 },
+		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
+
+	std::vector<Texture*> attachments(attachmentInfo.size());
+	for (int i = 0; i < attachments.size(); i++) {
+		attachments[i] = Texture::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo[i].format, attachmentInfo[i].usage, attachmentInfo[i].imageLayout, nullptr);
+	}
+	//_device->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
 	renderTarget = RenderTarget::CreateFromTextures(_device, attachments, &swapchain.view);
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
@@ -84,7 +109,6 @@ Renderer::~Renderer() {
 	delete _unfirom;
 	delete _shader;
 	delete _mesh;
-	delete resourceManger;
 	delete renderTarget;
 	delete _material;
 	_device->waitForFences(FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
@@ -99,6 +123,7 @@ Renderer::~Renderer() {
 		_device->destroyImageView(frame);
 	}
 	instance.destroySurfaceKHR(surface);
+	_device->deallocateAll();
 	_device->destroy();
 	instance.destroy();
 }

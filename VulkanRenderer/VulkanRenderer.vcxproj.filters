@@ -45,9 +45,6 @@
     <ClCompile Include="vulkanRender\resources\Resource.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vulkanRender\resources\ResourceManger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vulkanRender\resources\UniformBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vulkanRender\resources\Resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vulkanRender\resources\ResourceManger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="vulkanRender\resources\UniformBuffer.h">

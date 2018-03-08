@@ -6,13 +6,6 @@ Texture::Texture()
 {
 }
 
-
-Texture::~Texture()
-{
-	_device->destroyImage(_image);
-	_device->destroyImageView(_imageView);
-}
-
 Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout imageLayout, vk::Sampler* sampler) {
 	Texture* texture = new Texture();
 	auto const imageInfo = vk::ImageCreateInfo()
@@ -31,21 +24,11 @@ Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format forma
 	texture->_usage = usage;
 	texture->_format = format;
 	texture->_sampler = sampler;
-	texture->_device = device;
 	texture->_extent = extent;
 	texture->_layout = imageLayout;
-	return texture;
-}
-
-void Texture::bindMemory(vk::DeviceMemory memory)
-{
-	_device->bindImageMemory(_image, memory, _offset);
-}
-
-bool Texture::postAllocation()
-{
+	device->attachResource(texture, vk::MemoryPropertyFlagBits::eDeviceLocal);
 	vk::ImageAspectFlagBits aspect;
-	if (_usage == vk::ImageUsageFlagBits::eColorAttachment) {
+	if (usage == vk::ImageUsageFlagBits::eColorAttachment) {
 		aspect = vk::ImageAspectFlagBits::eColor;
 	}
 	else {
@@ -54,14 +37,25 @@ bool Texture::postAllocation()
 
 	auto const viewInfo = vk::ImageViewCreateInfo()
 		.setViewType(vk::ImageViewType::e2D)
-		.setFormat(_format)
+		.setFormat(format)
 		.setComponents(vk::ComponentMapping(
 			vk::ComponentSwizzle::eIdentity
 		))
 		.setSubresourceRange(vk::ImageSubresourceRange(
 			aspect, 0, 1, 0, 1
 		))
-		.setImage(_image);
-	_imageView = _device->createImageView(viewInfo);
-	return true;
+		.setImage(texture->_image);
+	texture->_imageView = device->createImageView(viewInfo);
+	return texture;
+}
+
+void Texture::destroy(EnDevice * device)
+{
+	device->destroyImage(_image);
+	device->destroyImageView(_imageView);
+}
+
+void Texture::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset)
+{
+	device->bindImageMemory(_image, memory, _offset + localOffset);
 }

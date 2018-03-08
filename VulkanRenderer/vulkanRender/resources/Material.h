@@ -24,5 +24,7 @@ private:
 	vector<vk::DescriptorSetLayout> _descriptorSetLayout;
 	vk::DescriptorPool _descriptorPool;
 	vk::DescriptorSet _descriptorSet;
+
+	EnDevice* _device;
 };
 

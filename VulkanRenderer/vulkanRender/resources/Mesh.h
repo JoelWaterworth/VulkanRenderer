@@ -27,7 +27,6 @@ public:
 	~Mesh();
 	void draw(vk::CommandBuffer commandBuffer);
 private:
-	EnDevice* device = nullptr;
 	vk::DeviceMemory indexMemory;
 	vk::DeviceMemory vertexMemory;
 	vk::Buffer indexBuffer;
@@ -35,5 +34,7 @@ private:
 	uint32_t indexBufferLen;
 	uint64_t indexOffset = 0;
 	uint64_t vertexOffset = 0;
+
+	EnDevice* _device;
 };
 

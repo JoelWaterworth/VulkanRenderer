@@ -157,7 +157,6 @@
     <ClCompile Include="vulkanRender\resources\Mesh.cpp" />
     <ClCompile Include="vulkanRender\Renderer.cpp" />
     <ClCompile Include="vulkanRender\RenderTarget.cpp" />
-    <ClCompile Include="vulkanRender\resources\ResourceManger.cpp" />
     <ClCompile Include="vulkanRender\Shader.cpp" />
     <ClCompile Include="vulkanRender\util.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -173,7 +172,6 @@
     <ClInclude Include="vulkanRender\resources\Mesh.h" />
     <ClInclude Include="vulkanRender\Renderer.h" />
     <ClInclude Include="vulkanRender\RenderTarget.h" />
-    <ClInclude Include="vulkanRender\resources\ResourceManger.h" />
     <ClInclude Include="vulkanRender\Shader.h" />
     <ClInclude Include="vulkanRender\util.h" />
     <ClInclude Include="Window.h" />

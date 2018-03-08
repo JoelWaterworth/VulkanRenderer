@@ -18,6 +18,8 @@ private:
 	vk::DescriptorBufferInfo _descriptor;
 	vk::DeviceMemory _memory;
 	vk::Buffer _buffer;
+
+	EnDevice* _device;
 };
 
 template<class T>
