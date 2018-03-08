@@ -92,32 +92,3 @@ void EnDevice::allocateBlock(vk::MemoryPropertyFlags memoryFlags)
 	vk::DeviceMemory memory = allocateMemory(memoryInfo);
 	allocations.push_back({ memory, vector<Resource*>(), 0 });
 }
-
-void EnDevice::allocate(const vector<Resource*>& resources, vk::MemoryPropertyFlags memoryFlags)
-{
-	uint32_t size = 0;
-	for (auto resource : resources) {
-		resource->_offset = size;
-		size += resource->getRequirments().size;
-	}
-	vk::MemoryRequirements memReq = resources[0]->getRequirments();
-
-	uint32_t memoryIndex = 0;
-
-	if (!memoryTypeFromProperties(
-		memReq,
-		memoryFlags,
-		&memoryIndex)) {
-		assert("no suitable memory type");
-	};
-
-	auto const memoryInfo = vk::MemoryAllocateInfo()
-		.setAllocationSize(size)
-		.setMemoryTypeIndex(memoryIndex);
-	vk::DeviceMemory memory = allocateMemory(memoryInfo);
-	for (auto resource : resources) {
-		resource->bindMemory(this, memory, 0);
-		resource->postAllocation(this);
-	}
-	//allocations.push_back({ memory, resources });
-}

@@ -28,8 +28,6 @@ public:
 	void attachResource(Resource* resource, vk::MemoryPropertyFlags memoryFlags);
 
 	void allocateBlock(vk::MemoryPropertyFlags memoryFlags);
-
-	void allocate(const vector<Resource*>& resources, vk::MemoryPropertyFlags memoryFlags);
 private:
 	vector<Block> allocations;
 	uint64_t blockSize = 512;

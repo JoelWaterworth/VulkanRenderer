@@ -8,8 +8,3 @@ void Resource::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t lo
 void Resource::destroy(EnDevice* device)
 {
 }
-
-bool Resource::postAllocation(EnDevice* device)
-{
-	return false;
-}
