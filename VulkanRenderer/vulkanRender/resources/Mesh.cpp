@@ -50,38 +50,32 @@ Mesh* Mesh::Create(EnDevice* device, path p)
 
 Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData)
 {
-	this->_device = device;
+	_device = device;
 	int32_t vertexBufferSize = vertexData.size() * sizeof(float);
 	int32_t indexBufferSize = indexData.size() * sizeof(unsigned int);
+	vertexBuffer = EnBuffer::Create(device, vk::BufferUsageFlagBits::eVertexBuffer, vertexBufferSize, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+	indexBuffer = EnBuffer::Create(device, vk::BufferUsageFlagBits::eIndexBuffer, indexBufferSize, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
-	std::pair<vk::Buffer, vk::DeviceMemory> vertex = device->allocateBuffer(vertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-	std::pair<vk::Buffer, vk::DeviceMemory> index = device->allocateBuffer(indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-	this->vertexBuffer = vertex.first;
-	this->vertexMemory = vertex.second;
-	this->indexBuffer = index.first;
-	this->indexMemory = index.second;
 	this->indexBufferLen = indexData.size();
-	void* vertexPtr = device->mapMemory(vertexMemory, 0, vertexBufferSize);
+	void* vertexPtr = device->mapMemory(vertexBuffer->memory, vertexBuffer->_offset, vertexBufferSize);
 	memcpy(vertexPtr, vertexData.data(), (size_t)vertexBufferSize);
-	device->unmapMemory(vertex.second);
-	void* indexPtr = device->mapMemory(indexMemory, 0, indexBufferSize);
+	device->unmapMemory(vertexBuffer->memory);
+	void* indexPtr = device->mapMemory(indexBuffer->memory, indexBuffer->_offset, indexBufferSize);
 	memcpy(indexPtr, indexData.data(), (size_t)indexBufferSize);
-	device->unmapMemory(index.second);
+	device->unmapMemory(indexBuffer->memory);
 }
 
 Mesh::~Mesh()
 {
-	_device->destroyBuffer(indexBuffer);
-	_device->destroyBuffer(vertexBuffer);
-	_device->freeMemory(indexMemory);
-	_device->freeMemory(vertexMemory);
+	delete indexBuffer;
+	delete vertexBuffer;
 }
 
 void Mesh::draw(vk::CommandBuffer commandBuffer) {
-	commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &vertexOffset);
+	commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->buffer, &vertexOffset);
 
 	commandBuffer.bindIndexBuffer(
-			indexBuffer,
+			indexBuffer->buffer,
 			indexOffset,
 			vk::IndexType::eUint32);
 	
@@ -91,4 +85,12 @@ void Mesh::draw(vk::CommandBuffer commandBuffer) {
 			0,
 			0,
 			1);
+}
+
+void Mesh::destroy(EnDevice * device)
+{
+}
+
+void Mesh::bindMemory(EnDevice * device, vk::DeviceMemory memory, uint64_t localOffset)
+{
 }

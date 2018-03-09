@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_sdk_platform.h>
 #include "../EnDevice.h"
+#include "EnBuffer.h"
 #include "Resource.h"
 #include <vector>
 #include <glm/vec3.hpp>
@@ -26,15 +27,14 @@ public:
 	Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
 	~Mesh();
 	void draw(vk::CommandBuffer commandBuffer);
+	virtual void destroy(EnDevice* device);
+	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
 private:
-	vk::DeviceMemory indexMemory;
-	vk::DeviceMemory vertexMemory;
-	vk::Buffer indexBuffer;
-	vk::Buffer vertexBuffer;
+	EnDevice * _device;
+	EnBuffer* indexBuffer;
+	EnBuffer* vertexBuffer;
 	uint32_t indexBufferLen;
 	uint64_t indexOffset = 0;
 	uint64_t vertexOffset = 0;
-
-	EnDevice* _device;
 };
 

@@ -7,9 +7,6 @@
 void EnDevice::deallocateAll()
 {
 	for (auto allocation : allocations) {
-		for (int i = 0; i < allocation.resources.size(); i++) {
-			allocation.resources[i]->destroy(this);
-		}
 		freeMemory(allocation.allocation);
 	}
 }
@@ -18,7 +15,6 @@ EnDevice * EnDevice::Create(vk::PhysicalDevice gpu, vk::DeviceCreateInfo createI
 {
 	EnDevice* device = new EnDevice(nullptr);
 	VK_CHECK_RESULT(gpu.createDevice(&createInfo, pAllocator, device));
-	device->allocateBlock(vk::MemoryPropertyFlagBits::eDeviceLocal);
 	return device;
 }
 
@@ -75,20 +71,38 @@ std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize 
 	return std::pair<vk::Buffer, vk::DeviceMemory>(buffer, memory);
 }
 
-void EnDevice::attachResource(Resource * resource, vk::MemoryPropertyFlags memoryFlags)
+void EnDevice::attachResource(Resource * resource, vk::MemoryPropertyFlags requirementsMask)
 {
-	Block* b = &allocations[allocations.size() - 1];
+	uint32_t typeBit = 0;
+	if (!memoryTypeFromProperties(
+		resource->getRequirments(),
+		requirementsMask,
+		&typeBit)) {
+		assert("no suitable memory type");
+	};
+	for (auto& allocation : allocations) {
+		if (allocation.typeBit == typeBit) {
+			resource->_offset = allocation.currentOffset;
+			resource->bindMemory(this, allocation.allocation, 0);
+			allocation.currentOffset += resource->getRequirments().size;
+			resource->memory = allocation.allocation;
+			return;
+		}
+	}
+
+	Block* b = allocateBlock(typeBit);
 	resource->_offset = b->currentOffset;
 	resource->bindMemory(this, b->allocation, 0);
-	b->resources.push_back(resource);
 	b->currentOffset += resource->getRequirments().size;
+	resource->memory = b->allocation;
 }
 
-void EnDevice::allocateBlock(vk::MemoryPropertyFlags memoryFlags)
+Block* EnDevice::allocateBlock(uint32_t typeBit)
 {
 	auto const memoryInfo = vk::MemoryAllocateInfo()
 		.setAllocationSize(blockSize * 1024 * 1024)
-		.setMemoryTypeIndex(7);
+		.setMemoryTypeIndex(typeBit);
 	vk::DeviceMemory memory = allocateMemory(memoryInfo);
-	allocations.push_back({ memory, vector<Resource*>(), 0 });
+	allocations.push_back({ memory, 0, typeBit });
+	return &allocations[allocations.size() - 1];
 }

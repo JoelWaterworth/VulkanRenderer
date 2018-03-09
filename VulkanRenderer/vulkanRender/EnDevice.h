@@ -7,8 +7,8 @@ using namespace std;
 
 struct Block {
 	vk::DeviceMemory allocation;
-	vector<Resource*> resources;
 	uint64_t currentOffset;
+	uint32_t typeBit;
 };
 
 class EnDevice : public vk::Device
@@ -25,9 +25,9 @@ public:
 
 	std::pair<vk::Buffer, vk::DeviceMemory> allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 
-	void attachResource(Resource* resource, vk::MemoryPropertyFlags memoryFlags);
+	void attachResource(Resource * resource, vk::MemoryPropertyFlags requirementsMask);
 
-	void allocateBlock(vk::MemoryPropertyFlags memoryFlags);
+	Block* allocateBlock(uint32_t typeBit);
 private:
 	vector<Block> allocations;
 	uint64_t blockSize = 512;

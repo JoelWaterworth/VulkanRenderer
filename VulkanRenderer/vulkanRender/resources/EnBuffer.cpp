@@ -1,0 +1,26 @@
+#include "EnBuffer.h"
+
+EnBuffer::EnBuffer() {
+
+}
+
+EnBuffer* EnBuffer::Create(EnDevice* device, vk::BufferUsageFlags usage, vk::DeviceSize size, vk::MemoryPropertyFlags flags)
+{
+	EnBuffer* buffer = new EnBuffer();
+	auto const bufferInfo = vk::BufferCreateInfo()
+		.setSize(size)
+		.setUsage(usage)
+		.setSharingMode(vk::SharingMode::eExclusive);
+	buffer->buffer = device->createBuffer(bufferInfo);
+	buffer->requirments = device->getBufferMemoryRequirements(buffer->buffer);
+	device->attachResource(buffer, flags);
+	return buffer;
+}
+
+
+void EnBuffer::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset) {
+	device->bindBufferMemory(buffer, memory, _offset + localOffset);
+}
+void EnBuffer::destroy(EnDevice* device) {
+	device->destroyBuffer(buffer);
+}

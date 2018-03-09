@@ -10,6 +10,7 @@ public:
 	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
 	virtual void destroy(EnDevice* device);
 	uint64_t _offset;
+	vk::DeviceMemory memory = nullptr;
 protected:
 	vk::MemoryRequirements requirments;
 };
