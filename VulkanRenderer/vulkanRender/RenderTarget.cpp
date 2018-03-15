@@ -153,6 +153,7 @@ RenderTarget::~RenderTarget() {
 	_device->destroySampler(sampler);
 
 	for (auto attachment : attachments) {
+		attachment->destroy(_device);
 		delete attachment;
 	}
 }

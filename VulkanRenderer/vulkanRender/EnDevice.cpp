@@ -9,13 +9,7 @@ void EnDevice::deallocateAll()
 	for (auto allocation : allocations) {
 		freeMemory(allocation.allocation);
 	}
-}
-
-EnDevice * EnDevice::Create(vk::PhysicalDevice gpu, vk::DeviceCreateInfo createInfo, const vk::AllocationCallbacks * pAllocator)
-{
-	EnDevice* device = new EnDevice(nullptr);
-	VK_CHECK_RESULT(gpu.createDevice(&createInfo, pAllocator, device));
-	return device;
+	destroyCommandPool(_commandPool);
 }
 
 bool EnDevice::memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::MemoryPropertyFlags requirementsMask, uint32_t* typeIndex)
@@ -47,6 +41,47 @@ bool EnDevice::memoryTypeFromProperties(vk::MemoryRequirements memReq, vk::Memor
 	});
 }
 
+int32_t EnDevice::findProperties( uint32_t memoryTypeBitsRequirement, vk::MemoryPropertyFlags requiredProperties) {
+	const uint32_t memoryCount = memoryProperties.memoryTypeCount;
+	for (uint32_t memoryIndex = 0; memoryIndex < memoryCount; ++memoryIndex) {
+		const uint32_t memoryTypeBits = (1 << memoryIndex);
+		const bool isRequiredMemoryType = memoryTypeBitsRequirement & memoryTypeBits;
+
+		const vk::MemoryPropertyFlags properties =
+			memoryProperties.memoryTypes[memoryIndex].propertyFlags;
+		const bool hasRequiredProperties =
+			(properties & requiredProperties) == requiredProperties;
+
+		if (isRequiredMemoryType && hasRequiredProperties)
+			return static_cast<int32_t>(memoryIndex);
+	}
+
+	// failed to find memory type
+	return -1;
+}
+
+uint32_t EnDevice::getMemoryType(uint32_t typeBits, vk::MemoryPropertyFlags properties, vk::Bool32 * memTypeFound)
+{
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+		if ((typeBits & 1) == 1) {
+			if ((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				if (memTypeFound) {
+					*memTypeFound = true;
+				}
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+
+	if (memTypeFound) {
+		*memTypeFound = false;
+		return 0;
+	} else {
+		throw std::runtime_error("Could not find a matching memory type");
+	}
+}
+
 std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties)
 {
 	auto const buffer_info = vk::BufferCreateInfo()
@@ -73,19 +108,14 @@ std::pair<vk::Buffer, vk::DeviceMemory> EnDevice::allocateBuffer(vk::DeviceSize 
 
 void EnDevice::attachResource(Resource * resource, vk::MemoryPropertyFlags requirementsMask)
 {
-	uint32_t typeBit = 0;
-	if (!memoryTypeFromProperties(
-		resource->getRequirments(),
-		requirementsMask,
-		&typeBit)) {
-		assert("no suitable memory type");
-	};
+	uint32_t typeBit = getMemoryType(resource->getRequirments().memoryTypeBits, requirementsMask);
 
 	for (auto& allocation : allocations) {
 		if (allocation.typeBit == typeBit) {
-			resource->_offset = allocation.currentOffset;
+			vk::MemoryRequirements req = resource->getRequirments();
+			resource->_offset = allocation.currentOffset + req.alignment - allocation.currentOffset % req.alignment;
 			resource->bindMemory(this, allocation.allocation, 0);
-			allocation.currentOffset += resource->getRequirments().size;
+			allocation.currentOffset += req.size;
 			resource->memory = allocation.allocation;
 			return;
 		}
@@ -106,4 +136,133 @@ Block* EnDevice::allocateBlock(uint32_t typeBit)
 	vk::DeviceMemory memory = allocateMemory(memoryInfo);
 	allocations.push_back({ memory, 0, typeBit });
 	return &allocations[allocations.size() - 1];
+}
+
+void EnDevice::createCommandBuffer(vk::CommandBufferLevel level, uint8_t commandBufferNum, vk::CommandBuffer* commandBuffers) {
+	auto const info = vk::CommandBufferAllocateInfo(_commandPool, level, commandBufferNum);
+	allocateCommandBuffers(&info, commandBuffers);
+}
+
+void EnDevice::submitCommandBuffer(vk::CommandBuffer cmd, bool free) {
+	cmd.end();
+
+	auto const info = vk::SubmitInfo()
+		.setCommandBufferCount(1)
+		.setPCommandBuffers(&cmd);
+	graphicsQueue.submit(1, &info, nullptr);
+	graphicsQueue.waitIdle();
+}
+
+void EnDevice::setUpmarkers()
+{
+	bool debugExtensionPresent = false;
+	uint32_t extensionCount = 0;
+	_gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, nullptr);
+	std::vector<vk::ExtensionProperties> extensions(extensionCount);
+	_gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+	for (auto extension : extensions) {
+		if (strcmp(extension.extensionName, VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == 0) {
+			debugExtensionPresent = true;
+			break;
+		}
+	}
+
+	if (debugExtensionPresent) {
+		debugMarkerSetObjectTag = reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(getProcAddr("vkDebugMarkerSetObjectTagEXT"));
+		debugMarkerSetObjectName = reinterpret_cast<PFN_vkDebugMarkerSetObjectNameEXT>(getProcAddr("vkDebugMarkerSetObjectNameEXT"));
+		cmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)getProcAddr("vkCmdDebugMarkerBeginEXT");
+		cmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)getProcAddr("vkCmdDebugMarkerEndEXT");
+		cmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)getProcAddr("vkCmdDebugMarkerInsertEXT");
+		debugMarkerActive = (debugMarkerSetObjectName != nullptr);
+	}
+	else {
+		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled.";
+		std::cout << "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)" << std::endl;
+	}
+}
+
+void EnDevice::setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objectType, const char * name)
+{
+	if (debugMarkerActive) {
+		auto const info = vk::DebugMarkerObjectNameInfoEXT()
+			.setObjectType(objectType)
+			.setObject(object)
+			.setPObjectName(name);
+		debugMarkerSetObjectName(*this, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&info));
+	}
+}
+
+void EnDevice::setObjectTag(uint64_t object, vk::DebugReportObjectTypeEXT objectType, uint64_t name, size_t tageSize, const void * tag)
+{
+}
+
+void EnDevice::beginRegion(VkCommandBuffer cmdbuffer, const char * pMarkerName, glm::vec4 color)
+{
+}
+
+void EnDevice::insert(VkCommandBuffer cmdbuffer, const char * pMarkerName, glm::vec4 color)
+{
+}
+
+void EnDevice::endRegion(VkCommandBuffer cmdbuffer)
+{
+}
+
+EnDevice::EnDevice(vk::Instance instance, vk::SurfaceKHR surface)
+{
+	uint32_t gpu_count;
+	instance.enumeratePhysicalDevices(&gpu_count, NULL);
+	std::vector<vk::PhysicalDevice> physicalDevices(gpu_count);
+
+	if (gpu_count > 0) {
+		instance.enumeratePhysicalDevices(&gpu_count, physicalDevices.data());
+	}
+	else {
+		assert(0 && "no valid gpu");
+	}
+
+	_gpu = physicalDevices[0];
+
+
+	_gpu.getQueueFamilyProperties(&queueFamilyCount, NULL);
+	std::vector<vk::QueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+	_gpu.getQueueFamilyProperties(&queueFamilyCount, queueFamilyProperties.data());
+
+
+	std::vector<vk::Bool32> supportPresents(queueFamilyCount);
+	graphicsQueueFamilyIndex = UINT32_MAX;
+	for (uint32_t i = 0; i < queueFamilyCount; i++) {
+		_gpu.getSurfaceSupportKHR(i, surface, &supportPresents[i]);
+		if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics && supportPresents[i] == VK_TRUE) {
+			graphicsQueueFamilyIndex = i;
+		}
+	}
+
+	if (graphicsQueueFamilyIndex == UINT32_MAX) {
+		assert(0 && "Vulkan no valid graphics queue family index.");
+	}
+
+	float queue_priorities[1] = { 0.0 };
+	auto const queueInfo = vk::DeviceQueueCreateInfo()
+		.setQueueFamilyIndex(graphicsQueueFamilyIndex)
+		.setQueueCount(1)
+		.setPQueuePriorities(queue_priorities);
+
+	std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+	auto const createInfo = vk::DeviceCreateInfo()
+		.setQueueCreateInfoCount(1)
+		.setPQueueCreateInfos(&queueInfo)
+		.setEnabledExtensionCount(deviceExtensions.size())
+		.setPpEnabledExtensionNames(deviceExtensions.data());
+
+	VK_CHECK_RESULT(_gpu.createDevice(&createInfo, nullptr, this));
+	memoryProperties = _gpu.getMemoryProperties();
+	getQueue(graphicsQueueFamilyIndex, 0, &graphicsQueue);
+	presentQueue = graphicsQueue;
+
+	auto const cmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(graphicsQueueFamilyIndex);
+	VK_CHECK_RESULT(createCommandPool(&cmdPoolInfo, nullptr, &_commandPool));
+	//setUpmarkers();
 }

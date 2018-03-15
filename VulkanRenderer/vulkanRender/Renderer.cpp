@@ -82,8 +82,8 @@ Renderer::Renderer(std::string title, Window* window) {
 	*/
 
 	std::vector<AttachmentInfo> attachmentInfo = {
-		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::ePresentSrcKHR, 1 },
-		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
+		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment,			vk::ImageLayout::ePresentSrcKHR, 1 },
+		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment,	vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
 
 	std::vector<Texture*> attachments(attachmentInfo.size());
 	for (int i = 0; i < attachments.size(); i++) {
@@ -94,11 +94,11 @@ Renderer::Renderer(std::string title, Window* window) {
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
-	//_texture = Texture::Create(_device, path("assets/textures/test.tga"));
-	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, 0, 0);
+	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
+	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
-	std::vector<UniformBinding> uniforms = { { _unfirom, 0} };
+	std::vector<UniformBinding> uniforms = { { _texture, 0} };
 	_material = Material::CreateMaterialWithShader(_device, _shader, uniforms);
 	CreateFencesSemaphore();
 
@@ -107,8 +107,11 @@ Renderer::Renderer(std::string title, Window* window) {
 
 Renderer::~Renderer() {
 	_device->waitIdle();
+	_texture->destroy(_device);
+	delete _texture;
 	delete _unfirom;
 	delete _shader;
+	_mesh->destroy(_device);
 	delete _mesh;
 	delete renderTarget;
 	delete _material;
@@ -118,7 +121,6 @@ Renderer::~Renderer() {
 		_device->destroySemaphore(_presentComplete[i]);
 		_device->destroyFence(_fences[i]);
 	}
-	_device->destroyCommandPool(_commandPool);
 	_device->destroySwapchainKHR(swapchain.handle);
 	for (auto frame : swapchain.view) {
 		_device->destroyImageView(frame);
@@ -158,7 +160,7 @@ void Renderer::Run() {
 		.setSignalSemaphoreCount(1)
 		.setPSignalSemaphores(&_completeRender[_frameIndex]);
 
-	VK_CHECK_RESULT(graphicsQueue.submit(1, &submitInfo, vk::Fence()));
+	VK_CHECK_RESULT(_device->getGraphicsQueue().submit(1, &submitInfo, vk::Fence()));
 
 	auto const presentInfo = vk::PresentInfoKHR()
 		.setWaitSemaphoreCount(1)
@@ -167,7 +169,7 @@ void Renderer::Run() {
 		.setPSwapchains(&swapchain.handle)
 		.setPImageIndices(&currentBuffer);
 
-	 res = presentQueue.presentKHR(&presentInfo);
+	 res = _device->getPresentQueue().presentKHR(&presentInfo);
 	_frameIndex += 1;
 	_frameIndex %= FRAME_LAG;
 	if (res == vk::Result::eErrorOutOfDateKHR) {
@@ -215,95 +217,17 @@ void Renderer::initInstance(std::string title) {
 void Renderer::initDebug() {
 	CreateDebugReportCallbackEXT = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 	CreateDebugReportCallbackEXT(this->instance, reinterpret_cast<const VkDebugReportCallbackCreateInfoEXT*>(&dbgCreateInfo), NULL, &debugReport);
-
-	SetupDebugMarkers();
-}
-
-void Renderer::SetupDebugMarkers() {
-	bool debugExtensionPresent = false;
-	uint32_t extensionCount = 0;
-	gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, nullptr);
-	std::vector<vk::ExtensionProperties> extensions(extensionCount);
-	gpu.enumerateDeviceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-	for (auto extension : extensions) {
-		if (strcmp(extension.extensionName, VK_EXT_DEBUG_MARKER_EXTENSION_NAME) == 0) {
-			debugExtensionPresent = true;
-			break;
-		}
-	}
-
-	if (debugExtensionPresent) {
-		debugMarkerSetObjectTag = reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(_device->getProcAddr("vkDebugMarkerSetObjectTagEXT"));
-		debugMarkerSetObjectName = (PFN_vkDebugMarkerSetObjectNameEXT)_device->getProcAddr("vkDebugMarkerSetObjectNameEXT");
-		cmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)_device->getProcAddr("vkCmdDebugMarkerBeginEXT");
-		cmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)_device->getProcAddr("vkCmdDebugMarkerEndEXT");
-		cmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)_device->getProcAddr("vkCmdDebugMarkerInsertEXT");
-		debugMarkerActive = debugMarkerSetObjectTag != nullptr;
-	} else {
-		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled.";
-		std::cout << "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)" << std::endl;
-	}
 }
 
 void Renderer::initDevice() {
-	uint32_t gpu_count;
-	instance.enumeratePhysicalDevices(&gpu_count, NULL);
-	std::vector<vk::PhysicalDevice> physicalDevices(gpu_count);
-
-	if (gpu_count > 0) {
-		instance.enumeratePhysicalDevices(&gpu_count, physicalDevices.data());
-	}
-	else {
-		assert(0 && "no valid gpu");
-	}
-
-	this->gpu = physicalDevices[0];
-
-
-	gpu.getQueueFamilyProperties(&queueFamilyCount, NULL);
-	std::vector<vk::QueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
-	gpu.getQueueFamilyProperties(&queueFamilyCount, queueFamilyProperties.data());
-
-
-	std::vector<vk::Bool32> supportPresents(queueFamilyCount);
-	graphicsQueueFamilyIndex = UINT32_MAX;
-	for (uint32_t i = 0; i < queueFamilyCount; i++) {
-		gpu.getSurfaceSupportKHR(i, this->surface, &supportPresents[i]);
-		if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics && supportPresents[i] == VK_TRUE) {
-			graphicsQueueFamilyIndex = i;
-		}
-	}
-
-	if (graphicsQueueFamilyIndex == UINT32_MAX) {
-		assert(0 && "Vulkan no valid graphics queue family index.");
-	}
-
-	float queue_priorities[1] = { 0.0 };
-	auto const queueInfo = vk::DeviceQueueCreateInfo()
-		.setQueueFamilyIndex(graphicsQueueFamilyIndex)
-		.setQueueCount(1)
-		.setPQueuePriorities(queue_priorities);
-
-	std::vector<const char*> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-	auto const createInfo = vk::DeviceCreateInfo()
-		.setQueueCreateInfoCount(1)
-		.setPQueueCreateInfos(&queueInfo)
-		.setEnabledExtensionCount(deviceExtensions.size())
-		.setPpEnabledExtensionNames(deviceExtensions.data());
-
-	_device = EnDevice::Create(gpu, createInfo);
-	gpu.getMemoryProperties(&_device->memoryProperties);
-	_device->getQueue(graphicsQueueFamilyIndex, 0, &graphicsQueue);
-	presentQueue = graphicsQueue;
+	_device = new EnDevice(instance, surface);
 }
 
 void Renderer::GetCapabilities() {
 	uint32_t pSurfaceFormatCount;
-	VK_CHECK_RESULT(this->gpu.getSurfaceFormatsKHR(this->surface, &pSurfaceFormatCount, NULL));
+	VK_CHECK_RESULT(_device->_gpu.getSurfaceFormatsKHR(this->surface, &pSurfaceFormatCount, NULL));
 	std::vector<vk::SurfaceFormatKHR> pSurfaceFormats(pSurfaceFormatCount);
-	VK_CHECK_RESULT(this->gpu.getSurfaceFormatsKHR(this->surface, &pSurfaceFormatCount, pSurfaceFormats.data()));
+	VK_CHECK_RESULT(_device->_gpu.getSurfaceFormatsKHR(this->surface, &pSurfaceFormatCount, pSurfaceFormats.data()));
 
 	vk::SurfaceFormatKHR format = {};
 
@@ -318,7 +242,7 @@ void Renderer::GetCapabilities() {
 	}
 
 	vk::SurfaceCapabilitiesKHR surfaceCapabilities;
-	this->gpu.getSurfaceCapabilitiesKHR(this->surface, &surfaceCapabilities);
+	_device->_gpu.getSurfaceCapabilitiesKHR(this->surface, &surfaceCapabilities);
 
 	uint32_t desiredImageCount = surfaceCapabilities.minImageCount + 1;
 	if (surfaceCapabilities.maxImageCount > 0 && desiredImageCount > surfaceCapabilities.maxImageCount) {
@@ -394,18 +318,13 @@ void Renderer::CreateFencesSemaphore() {
 		VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_presentComplete[i]));
 	}
 
-	auto const cmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(graphicsQueueFamilyIndex);
-	VK_CHECK_RESULT(_device->createCommandPool(&cmdPoolInfo, nullptr, &_commandPool));
-
 	auto const cmd = vk::CommandBufferAllocateInfo()
-		.setCommandPool(_commandPool)
+		.setCommandPool(_device->_commandPool)
 		.setLevel(vk::CommandBufferLevel::ePrimary)
-		.setCommandBufferCount(1);
+		.setCommandBufferCount(swapchain.view.size());
 
 	_draw.resize(swapchain.view.size());
-	for (uint32_t i = 0; i < swapchain.view.size(); ++i) {
-		VK_CHECK_RESULT(_device->allocateCommandBuffers(&cmd, &_draw[i]));
-	}
+	_device->allocateCommandBuffers(&cmd, _draw.data() );
 
 	for (auto& cmd : _draw) {
 		BuildPresentCommandBuffer(cmd);
@@ -444,15 +363,4 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	commandBuffer.end();
 	assert(res == vk::Result::eSuccess);
 	currentBuffer = currentBuffer + 1;
-}
-
-void Renderer::SetObjectName(uint64_t objectId, vk::DebugReportObjectTypeEXT objectType, const char * name)
-{
-	if (debugMarkerActive) {
-		auto const ObjectNameInfo = vk::DebugMarkerObjectNameInfoEXT()
-			.setObject(objectId)
-			.setObjectType(objectType)
-			.setPObjectName(name);
-		debugMarkerSetObjectName(*_device, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&ObjectNameInfo));
-	}
 }

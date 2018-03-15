@@ -37,28 +37,17 @@ public:
 private:
 	void initInstance(std::string title);
 	void initDebug();
-	void SetupDebugMarkers();
 	void initDevice();
 	void GetCapabilities();
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
 	void BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer);
-	void SetObjectName(uint64_t objectId, vk::DebugReportObjectTypeEXT objectType, const char *name);
 	bool debugMarkerActive = false;
 	bool prepared = false;
-	vk::Queue presentQueue;
-	vk::Queue graphicsQueue;
 	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo = vk::DebugReportCallbackCreateInfoEXT();
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
 
-	PFN_vkDebugMarkerSetObjectTagEXT     debugMarkerSetObjectTag = VK_NULL_HANDLE;
-	PFN_vkDebugMarkerSetObjectNameEXT	 debugMarkerSetObjectName = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerBeginEXT		 cmdDebugMarkerBegin = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerEndEXT			 cmdDebugMarkerEnd = VK_NULL_HANDLE;
-	PFN_vkCmdDebugMarkerInsertEXT		 cmdDebugMarkerInsert = VK_NULL_HANDLE;
-
 	std::vector<vk::CommandBuffer> _draw;
-	vk::CommandPool _commandPool;
 
 	vk::Semaphore _completeRender[FRAME_LAG];
 	vk::Semaphore _presentComplete[FRAME_LAG];
@@ -66,7 +55,6 @@ private:
 	vk::Fence _fences[FRAME_LAG];
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
-	uint32_t graphicsQueueFamilyIndex;
 	Texture* _texture = nullptr;
 	Mesh* _mesh = nullptr;
 	Shader* _shader = nullptr;
@@ -76,8 +64,6 @@ private:
 	EnDevice* _device = nullptr;
 	SurfaceCapabilities capabilities;
 	vk::SurfaceKHR surface = nullptr;
-	vk::PhysicalDevice gpu = nullptr;
-	uint32_t queueFamilyCount;
 	RenderTarget* renderTarget = nullptr;
 	struct {
 		vk::SwapchainKHR handle;

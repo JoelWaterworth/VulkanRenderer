@@ -21,7 +21,8 @@ public:
 		vk::Format format = vk::Format::eR16G16B16Sfloat,
 		vk::ImageUsageFlags _usage = vk::ImageUsageFlagBits::eColorAttachment,
 		vk::ImageLayout imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-		vk::Sampler sampler = nullptr);
+		vk::Sampler sampler = nullptr,
+		vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal);
 	virtual void destroy(EnDevice* device);
 	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
 	inline vk::ImageView getImageView() const { return _imageView; }
@@ -31,6 +32,7 @@ public:
 	inline vk::Extent2D getResloution() const { return _extent; }
 	virtual vk::DescriptorType getDescriptorType();
 	virtual vk::DescriptorImageInfo* getImageInfo();
+	void setImageLayout(vk::CommandBuffer cmd, vk::ImageAspectFlags ImageAspects, vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subResource);
 
 private:
 	vk::Image _image = nullptr;
@@ -41,4 +43,5 @@ private:
 	vk::Extent2D _extent;
 	vk::ImageLayout _layout;
 	vk::DescriptorImageInfo _descriptor;
+	vk::ImageSubresourceRange subResource;
 };

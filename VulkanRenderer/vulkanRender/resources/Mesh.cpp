@@ -28,10 +28,10 @@ Mesh* Mesh::Create(EnDevice* device, path p)
 	}
 	std::vector<float> vertexBuffer;
 	aiMesh* mesh = scene->mMeshes[0];
-	const aiVector3D* pUV = mesh->mTextureCoords[0] ? mesh->mTextureCoords[0] : &aiVector3D();
 	for (int i = 0; i < mesh->mNumVertices; i++) {
 		const aiVector3D* pPos = &(mesh->mVertices[i]);
 		const aiVector3D* pNor = &(mesh->mNormals[i]);
+		const aiVector3D* pUV = &(mesh->mTextureCoords[0][i]);
 		vertexBuffer.push_back(pPos->x);
 		vertexBuffer.push_back(pPos->y);
 		vertexBuffer.push_back(pPos->z);
@@ -98,6 +98,8 @@ void Mesh::draw(vk::CommandBuffer commandBuffer) {
 
 void Mesh::destroy(EnDevice * device)
 {
+	indexBuffer->destroy(device);
+	vertexBuffer->destroy(device);
 }
 
 void Mesh::bindMemory(EnDevice * device, vk::DeviceMemory memory, uint64_t localOffset)
