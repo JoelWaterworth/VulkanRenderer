@@ -90,16 +90,16 @@ Renderer::Renderer(std::string title, Window* window) {
 		attachments[i] = Texture::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo[i].format, attachmentInfo[i].usage, attachmentInfo[i].imageLayout, nullptr);
 	}
 	//_device->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	renderTarget = RenderTarget::CreateFromTextures(_device, attachments, &swapchain.view);
+	renderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, &swapchain.view);
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
-	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), shaderLayout);
+	_presentShader = Shader::Create(_device, renderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
 	std::vector<UniformBinding> uniforms = { { _texture, 0} };
-	_material = Material::CreateMaterialWithShader(_device, _shader, uniforms);
+	_material = Material::CreateMaterialWithShader(_device, _presentShader, uniforms);
 	CreateFencesSemaphore();
 
 	prepared = true;
@@ -110,7 +110,7 @@ Renderer::~Renderer() {
 	_texture->destroy(_device);
 	delete _texture;
 	delete _unfirom;
-	delete _shader;
+	delete _presentShader;
 	_mesh->destroy(_device);
 	delete _mesh;
 	delete renderTarget;
@@ -347,8 +347,8 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	assert(res == vk::Result::eSuccess);
 
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _shader->GetPipeline());
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _shader->GetPipelineLayout(), 0, 1, &_material->getDescriptorSet(), 0, nullptr);
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipeline());
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipelineLayout(), 0, 1, &_material->getDescriptorSet(), 0, nullptr);
 
 	auto const resolution = renderTarget->getResolution();
 

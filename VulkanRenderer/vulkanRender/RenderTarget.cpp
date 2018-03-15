@@ -11,12 +11,12 @@ RenderTarget::RenderTarget()
 {
 }
 
-RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> colourReq, AttachmentInfo depthReq, std::vector<vk::ImageView>* frameBufferImageViews)
+RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> req, std::vector<vk::ImageView>* frameBufferImageViews)
 {
 	RenderTarget* rt = new RenderTarget();
 	rt->resolution = r;
 	rt->_device = d;
-	if (colourReq.size() == 0) {
+	if (req.size() < 2) {
 		assert("colourReq cannot be empty");
 	}
 
@@ -37,18 +37,15 @@ RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<Atta
 			.setCompareOp(vk::CompareOp::eNever)
 			.setUnnormalizedCoordinates(0);
 	rt->sampler = d->createSampler(samplerInfo);
-
-	std::vector<AttachmentInfo> Req = colourReq;
-	Req.push_back(depthReq);
-	rt->attachments.resize(Req.size());
-	for (int i = 0; i < rt->attachments.size(); i++) {
-		rt->attachments[i] = Texture::Create(d, r, Req[i].format, Req[i].usage, Req[i].imageLayout, rt->sampler);
+	rt->attachments.resize(req.size());
+	for (int i = 0; i < req.size(); i++) {
+		rt->attachments[i] = Texture::Create(d, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
 	}
-
+	rt->SetUp(frameBufferImageViews);
 	return rt;
 }
 
-void RenderTarget::SetUp(EnDevice * device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews)
+void RenderTarget::SetUp(std::vector<vk::ImageView>* frameBufferImageViews)
 {
 	std::vector<vk::AttachmentDescription> renderpassAttachments(attachments.size());
 	for (int i = 0; i < attachments.size(); i++) {
@@ -140,7 +137,7 @@ RenderTarget* RenderTarget::CreateFromTextures(EnDevice * device, std::vector<Te
 	rt->resolution = attachments[0]->getResloution();
 	rt->_device = device;
 	rt->attachments = attachments;
-	rt->SetUp(device, attachments, frameBufferImageViews);
+	rt->SetUp(frameBufferImageViews);
 	return rt;
 }
 

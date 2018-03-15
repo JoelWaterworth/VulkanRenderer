@@ -107,9 +107,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="assets\shaders\Test.frag" />
+    <None Include="assets\shaders\deferred.frag" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="assets\shaders\Test.vert" />
+    <Text Include="assets\shaders\deferred.vert" />
   </ItemGroup>
 </Project>

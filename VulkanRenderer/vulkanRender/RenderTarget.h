@@ -45,12 +45,11 @@ public:
 	static RenderTarget* Create(
 		EnDevice* device, 
 		vk::Extent2D resloution, 
-		std::vector<AttachmentInfo> colourReq, 
-		AttachmentInfo DepthReq, 
+		std::vector<AttachmentInfo> req,
 		std::vector<vk::ImageView>* framebuffers = nullptr
 	);
 	static RenderTarget* CreateFromTextures(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
-	void SetUp(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
+	void SetUp(std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
 	~RenderTarget();
 
 	inline std::vector<Texture*> getAttachments() const { return attachments; }

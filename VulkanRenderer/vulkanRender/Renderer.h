@@ -57,7 +57,7 @@ private:
 	uint32_t currentBuffer = 0;
 	Texture* _texture = nullptr;
 	Mesh* _mesh = nullptr;
-	Shader* _shader = nullptr;
+	Shader* _presentShader = nullptr;
 	Material* _material = nullptr;
 	UniformInterface* _unfirom = nullptr;
 	vk::Instance instance = nullptr;
