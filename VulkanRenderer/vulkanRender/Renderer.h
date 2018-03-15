@@ -67,6 +67,7 @@ private:
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 	uint32_t graphicsQueueFamilyIndex;
+	Texture* _texture = nullptr;
 	Mesh* _mesh = nullptr;
 	Shader* _shader = nullptr;
 	Material* _material = nullptr;

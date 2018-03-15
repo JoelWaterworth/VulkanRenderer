@@ -13,6 +13,7 @@ EnBuffer* EnBuffer::Create(EnDevice* device, vk::BufferUsageFlags usage, vk::Dev
 		.setSharingMode(vk::SharingMode::eExclusive);
 	buffer->buffer = device->createBuffer(bufferInfo);
 	buffer->requirments = device->getBufferMemoryRequirements(buffer->buffer);
+	buffer->size = size;
 	device->attachResource(buffer, flags);
 	return buffer;
 }
@@ -21,6 +22,17 @@ EnBuffer* EnBuffer::Create(EnDevice* device, vk::BufferUsageFlags usage, vk::Dev
 void EnBuffer::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset) {
 	device->bindBufferMemory(buffer, memory, _offset + localOffset);
 }
+
 void EnBuffer::destroy(EnDevice* device) {
 	device->destroyBuffer(buffer);
+}
+
+void * EnBuffer::mapMemory(EnDevice* device)
+{
+	return device->mapMemory(memory, _offset, size);
+}
+
+void EnBuffer::unMapMemory(EnDevice* device)
+{
+	device->unmapMemory(memory);
 }

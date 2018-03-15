@@ -1,12 +1,47 @@
 #include "Texture.h"
 #include "../util.h"
 #include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 Texture::Texture()
 {
 }
 
-Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout imageLayout, vk::Sampler* sampler) {
+Texture * Texture::Create(EnDevice * device, path p)
+{
+	int width, height, nrChannels;
+	unsigned char *data = stbi_load(p.string().c_str(), &width, &height, &nrChannels, 0);
+	auto const samplerInfo = vk::SamplerCreateInfo()
+		.setMagFilter(vk::Filter::eNearest)
+		.setMinFilter(vk::Filter::eNearest)
+		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
+		.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+		.setMipLodBias(0.0f)
+		.setMinLod(0.0f)
+		.setMaxLod(1.0f)
+		.setAnisotropyEnable(0)
+		.setMaxAnisotropy(1.0f)
+		.setBorderColor(vk::BorderColor::eFloatOpaqueWhite)
+		.setCompareEnable(0)
+		.setCompareOp(vk::CompareOp::eNever)
+		.setUnnormalizedCoordinates(0);
+
+	Texture* t = Texture::Create(
+		device, vk::Extent2D(width, height),
+		vk::Format::eR8G8B8A8Unorm,
+		vk::ImageUsageFlagBits::eColorAttachment,
+		vk::ImageLayout::eColorAttachmentOptimal,
+		device->createSampler(samplerInfo));
+	void* ptr = device->mapMemory(t->memory, t->_offset, t->size);
+	memcpy(ptr, data, t->size);
+	device->unmapMemory(t->memory);
+	return nullptr;
+}
+
+Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout imageLayout, vk::Sampler sampler) {
 	Texture* texture = new Texture();
 	auto const imageInfo = vk::ImageCreateInfo()
 		.setImageType(vk::ImageType::e2D)
@@ -21,6 +56,7 @@ Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format forma
 		.setQueueFamilyIndexCount(0);
 	VK_CHECK_RESULT(device->createImage(&imageInfo, NULL, &texture->_image));
 	texture->requirments = device->getImageMemoryRequirements(texture->_image);
+	texture->size = texture->requirments.size;
 	texture->_usage = usage;
 	texture->_format = format;
 	texture->_sampler = sampler;
@@ -46,6 +82,7 @@ Texture* Texture::Create(EnDevice* device, vk::Extent2D extent, vk::Format forma
 		))
 		.setImage(texture->_image);
 	texture->_imageView = device->createImageView(viewInfo);
+	texture->_descriptor = vk::DescriptorImageInfo(sampler, texture->_imageView, texture->_layout);
 	return texture;
 }
 
@@ -58,4 +95,14 @@ void Texture::destroy(EnDevice * device)
 void Texture::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset)
 {
 	device->bindImageMemory(_image, memory, _offset + localOffset);
+}
+
+vk::DescriptorType Texture::getDescriptorType()
+{
+	return vk::DescriptorType::eCombinedImageSampler;
+}
+
+vk::DescriptorImageInfo * Texture::getImageInfo()
+{
+	return &_descriptor;
 }

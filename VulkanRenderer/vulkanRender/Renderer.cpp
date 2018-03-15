@@ -94,10 +94,11 @@ Renderer::Renderer(std::string title, Window* window) {
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
+	//_texture = Texture::Create(_device, path("assets/textures/test.tga"));
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	_shader = Shader::Create(_device, renderTarget, path("assets/shaders/Test.vert"), path("assets/shaders/Test.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
-	std::vector<UniformBinding> uniforms = { {_unfirom, 0} };
+	std::vector<UniformBinding> uniforms = { { _unfirom, 0} };
 	_material = Material::CreateMaterialWithShader(_device, _shader, uniforms);
 	CreateFencesSemaphore();
 

@@ -80,6 +80,7 @@ void EnDevice::attachResource(Resource * resource, vk::MemoryPropertyFlags requi
 		&typeBit)) {
 		assert("no suitable memory type");
 	};
+
 	for (auto& allocation : allocations) {
 		if (allocation.typeBit == typeBit) {
 			resource->_offset = allocation.currentOffset;

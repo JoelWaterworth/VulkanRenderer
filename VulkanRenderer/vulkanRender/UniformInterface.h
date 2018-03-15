@@ -9,5 +9,6 @@ public:
 	virtual ~UniformInterface();
 	virtual vk::DescriptorType getDescriptorType();
 	virtual vk::DescriptorBufferInfo* getBufferInfo();
+	virtual vk::DescriptorImageInfo* getImageInfo();
 };
 

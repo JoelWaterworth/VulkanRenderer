@@ -13,3 +13,8 @@ vk::DescriptorBufferInfo* UniformInterface::getBufferInfo()
 {
 	return nullptr;
 }
+
+vk::DescriptorImageInfo * UniformInterface::getImageInfo()
+{
+	return nullptr;
+}

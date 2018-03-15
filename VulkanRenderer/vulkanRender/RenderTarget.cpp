@@ -42,7 +42,7 @@ RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<Atta
 	Req.push_back(depthReq);
 	rt->attachments.resize(Req.size());
 	for (int i = 0; i < rt->attachments.size(); i++) {
-		rt->attachments[i] = Texture::Create(d, r, Req[i].format, Req[i].usage, Req[i].imageLayout, &rt->sampler);
+		rt->attachments[i] = Texture::Create(d, r, Req[i].format, Req[i].usage, Req[i].imageLayout, rt->sampler);
 	}
 
 	return rt;

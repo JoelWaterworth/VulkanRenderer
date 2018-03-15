@@ -12,5 +12,8 @@ public:
 	vk::Buffer buffer;
 	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
 	virtual void destroy(EnDevice* device);
+	void* mapMemory(EnDevice* device);
+	void unMapMemory(EnDevice* device);
+private:
 };
 

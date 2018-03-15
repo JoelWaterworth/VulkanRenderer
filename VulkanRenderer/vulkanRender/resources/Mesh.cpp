@@ -28,12 +28,20 @@ Mesh* Mesh::Create(EnDevice* device, path p)
 	}
 	std::vector<float> vertexBuffer;
 	aiMesh* mesh = scene->mMeshes[0];
+	const aiVector3D* pUV = mesh->mTextureCoords[0] ? mesh->mTextureCoords[0] : &aiVector3D();
 	for (int i = 0; i < mesh->mNumVertices; i++) {
 		const aiVector3D* pPos = &(mesh->mVertices[i]);
-		const aiVector3D* pNormal = &(mesh->mNormals[i]);
+		const aiVector3D* pNor = &(mesh->mNormals[i]);
 		vertexBuffer.push_back(pPos->x);
 		vertexBuffer.push_back(pPos->y);
 		vertexBuffer.push_back(pPos->z);
+
+		vertexBuffer.push_back(pNor->x);
+		vertexBuffer.push_back(pNor->y);
+		vertexBuffer.push_back(pNor->z);
+
+		vertexBuffer.push_back(pUV->x);
+		vertexBuffer.push_back(pUV->y);
 	}
 
 	std::vector<unsigned int> indexBuffer;
@@ -57,12 +65,13 @@ Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned
 	indexBuffer = EnBuffer::Create(device, vk::BufferUsageFlagBits::eIndexBuffer, indexBufferSize, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 	this->indexBufferLen = indexData.size();
-	void* vertexPtr = device->mapMemory(vertexBuffer->memory, vertexBuffer->_offset, vertexBufferSize);
+	
+	void* vertexPtr = vertexBuffer->mapMemory(device);
 	memcpy(vertexPtr, vertexData.data(), (size_t)vertexBufferSize);
-	device->unmapMemory(vertexBuffer->memory);
-	void* indexPtr = device->mapMemory(indexBuffer->memory, indexBuffer->_offset, indexBufferSize);
+	vertexBuffer->unMapMemory(device);
+	void* indexPtr = indexBuffer->mapMemory(device);
 	memcpy(indexPtr, indexData.data(), (size_t)indexBufferSize);
-	device->unmapMemory(indexBuffer->memory);
+	indexBuffer->unMapMemory(device);
 }
 
 Mesh::~Mesh()

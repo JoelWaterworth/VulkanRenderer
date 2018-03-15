@@ -46,7 +46,8 @@ Material * Material::CreateMaterialWithShader(EnDevice * device, Shader * shader
 			.setDstArrayElement(0)
 			.setDescriptorCount(1)
 			.setDescriptorType(uniformBuffers[i].uniform->getDescriptorType())
-			.setPBufferInfo(uniformBuffers[i].uniform->getBufferInfo());
+			.setPBufferInfo(uniformBuffers[i].uniform->getBufferInfo())
+			.setPImageInfo(uniformBuffers[i].uniform->getImageInfo());
 	};
 
 	device->updateDescriptorSets(descriptors.size(), descriptors.data(), 0, nullptr);

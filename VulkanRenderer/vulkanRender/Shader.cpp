@@ -91,15 +91,25 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 	};
 
 	vk::VertexInputBindingDescription const vertexInputBindingDescriptions[] = {
-		vk::VertexInputBindingDescription(0, sizeof(float) * 3, vk::VertexInputRate::eVertex)
+		vk::VertexInputBindingDescription(0, sizeof(float) * 8, vk::VertexInputRate::eVertex)
 	};
 
 	vk::VertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
-            vk::VertexInputAttributeDescription ()
+        vk::VertexInputAttributeDescription ()
 			.setLocation(0)
 			.setBinding(0)
 			.setFormat(vk::Format::eR32G32B32A32Sfloat)
-			.setOffset(0)
+			.setOffset(0),
+		vk::VertexInputAttributeDescription()
+			.setLocation(1)
+			.setBinding(0)
+			.setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(sizeof(float) * 3),
+		vk::VertexInputAttributeDescription()
+			.setLocation(2)
+			.setBinding(0)
+			.setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(sizeof(float) * 6)
 	};
 	auto const vertexInputStateInfo = vk::PipelineVertexInputStateCreateInfo()
 		.setVertexAttributeDescriptionCount(1)
