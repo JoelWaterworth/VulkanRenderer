@@ -58,39 +58,25 @@ Renderer::Renderer(std::string title, Window* window) {
 	initDevice();
 	GetCapabilities();
 	CreateSwapchain();
-	/*
-	std::vector<AttachmentInfo> defferedAttachmentInfo = {
+	AttachmentInfo defferedAttachmentInfo[] = {
 		{ vk::Format::eR16G16B16A16Sfloat,	vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
 		{ vk::Format::eR16G16B16A16Sfloat,	vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
 		{ vk::Format::eR8G8B8A8Unorm,		vk::ImageUsageFlagBits::eColorAttachment, vk::ImageLayout::eColorAttachmentOptimal, 1 },
 		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 }
 	};
 
-	std::vector<Texture*> attachments(defferedAttachmentInfo.size());
-	for (int i = 0; i < defferedAttachmentInfo.size(); i++) {
-		attachments[i] = Texture::Create(
-			_device,
-			capabilities.capabilities.maxImageExtent,
-			defferedAttachmentInfo[i].format,
-			defferedAttachmentInfo[i].usage,
-			defferedAttachmentInfo[i].imageLayout,
-			nullptr);
-	}
-	
-	_device->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	renderTarget = RenderTarget::CreateFromTextures(_device, attachments);
-	*/
-
-	AttachmentInfo attachmentInfo[] = {
+	AttachmentInfo PresentAttachmentInfo[] = {
 		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment,			vk::ImageLayout::ePresentSrcKHR, 1 },
 		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment,	vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
 
-	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, 2, &swapchain.view);
+	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
+	DeferredRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, defferedAttachmentInfo, 4);
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
+	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
 	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
 	std::vector<UniformBinding> uniforms = { { _texture, 0} };

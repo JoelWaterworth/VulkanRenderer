@@ -171,7 +171,7 @@ Shader* Shader::Create(EnDevice * device, RenderTarget* renderTarget, path vertP
 		.setMaxDepthBounds(1.0f)
 		.setMinDepthBounds(0.0f);
 
-	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getAttachmentNum() - 1);
+	std::vector<vk::PipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getColourAttachmentNum());
 	for (auto& a : colorBlendAttachmentStates) {
 		a = vk::PipelineColorBlendAttachmentState()
 			.setBlendEnable(0)

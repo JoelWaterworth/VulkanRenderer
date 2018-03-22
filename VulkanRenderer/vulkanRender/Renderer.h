@@ -58,6 +58,7 @@ private:
 	Texture* _texture = nullptr;
 	Mesh* _mesh = nullptr;
 	Shader* _presentShader = nullptr;
+	Shader* _deferredShader = nullptr;
 	Material* _material = nullptr;
 	UniformInterface* _unfirom = nullptr;
 	vk::Instance instance = nullptr;
@@ -65,6 +66,7 @@ private:
 	SurfaceCapabilities capabilities;
 	vk::SurfaceKHR surface = nullptr;
 	RenderTarget* PresentRenderTarget = nullptr;
+	RenderTarget* DeferredRenderTarget = nullptr;
 	struct {
 		vk::SwapchainKHR handle;
 		std::vector<vk::Image> images;

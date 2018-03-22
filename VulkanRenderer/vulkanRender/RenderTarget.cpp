@@ -127,7 +127,6 @@ void RenderTarget::SetUp(std::vector<vk::ImageView>* frameBufferImageViews)
 			.setHeight(resolution.height)
 			.setLayers(1);
 		this->framebuffers.push_back(_device->createFramebuffer(frameBufferCreateInfo));
-		attachments.pop_back();
 	}
 }
 

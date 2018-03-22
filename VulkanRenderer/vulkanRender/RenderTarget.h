@@ -56,6 +56,7 @@ public:
 	inline std::vector<Texture*> getAttachments() const { return attachments; }
 	inline vk::Extent2D getResolution() const { return resolution; };
 	inline size_t getAttachmentNum() const { return attachments.size(); }
+	inline size_t getColourAttachmentNum() const { return attachments.size() - 1; }
 	inline vk::RenderPass getRenderPass() const { return renderPass; }
 	inline std::vector<vk::Framebuffer> getFramebuffers() const { return framebuffers; }
 private:

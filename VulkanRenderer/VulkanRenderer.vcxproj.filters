@@ -108,6 +108,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="assets\shaders\deferred.frag" />
+    <None Include="assets\shaders\Present.frag" />
+    <None Include="assets\shaders\present.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="assets\shaders\deferred.vert" />
