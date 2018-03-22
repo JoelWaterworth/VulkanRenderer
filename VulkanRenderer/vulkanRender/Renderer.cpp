@@ -85,13 +85,13 @@ Renderer::Renderer(std::string title, Window* window) {
 		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment,			vk::ImageLayout::ePresentSrcKHR, 1 },
 		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment,	vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
 
-	renderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, 2, &swapchain.view);
+	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, 2, &swapchain.view);
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
-	_presentShader = Shader::Create(_device, renderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
+	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
 	std::vector<UniformBinding> uniforms = { { _texture, 0} };
 	_material = Material::CreateMaterialWithShader(_device, _presentShader, uniforms);
@@ -108,7 +108,7 @@ Renderer::~Renderer() {
 	delete _presentShader;
 	_mesh->destroy(_device);
 	delete _mesh;
-	delete renderTarget;
+	delete PresentRenderTarget;
 	delete _material;
 	_device->waitForFences(FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
 	for (int i = 0; i < FRAME_LAG; i++) {
@@ -328,13 +328,14 @@ void Renderer::CreateFencesSemaphore() {
 
 void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	auto const commandInfo = vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+	auto const resolution = PresentRenderTarget->getResolution();
 
 	vk::ClearValue const clearValues[2] = { vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 0.1f, 1.0f } })),
 											vk::ClearDepthStencilValue(1.0f, 0u) };
 	auto const passInfo = vk::RenderPassBeginInfo()
-		.setRenderPass(renderTarget->getRenderPass())
-		.setFramebuffer(renderTarget->getFramebuffers()[currentBuffer])
-		.setRenderArea(vk::Rect2D(vk::Offset2D(), renderTarget->getResolution()))
+		.setRenderPass(PresentRenderTarget->getRenderPass())
+		.setFramebuffer(PresentRenderTarget->getFramebuffers()[currentBuffer])
+		.setRenderArea(vk::Rect2D(vk::Offset2D(), resolution))
 		.setClearValueCount(2)
 		.setPClearValues(clearValues);
 
@@ -344,8 +345,6 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipeline());
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipelineLayout(), 0, 1, &_material->getDescriptorSet(), 0, nullptr);
-
-	auto const resolution = renderTarget->getResolution();
 
 	auto const viewport =
 		vk::Viewport().setWidth(resolution.width).setHeight(resolution.height).setMinDepth(0.0f).setMaxDepth(1.0f);

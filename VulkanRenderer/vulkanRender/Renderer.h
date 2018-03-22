@@ -64,7 +64,7 @@ private:
 	EnDevice* _device = nullptr;
 	SurfaceCapabilities capabilities;
 	vk::SurfaceKHR surface = nullptr;
-	RenderTarget* renderTarget = nullptr;
+	RenderTarget* PresentRenderTarget = nullptr;
 	struct {
 		vk::SwapchainKHR handle;
 		std::vector<vk::Image> images;
