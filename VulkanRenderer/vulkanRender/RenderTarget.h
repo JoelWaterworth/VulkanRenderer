@@ -45,7 +45,8 @@ public:
 	static RenderTarget* Create(
 		EnDevice* device, 
 		vk::Extent2D resloution, 
-		std::vector<AttachmentInfo> req,
+		AttachmentInfo* req,
+		uint32_t attachmentNumber,
 		std::vector<vk::ImageView>* framebuffers = nullptr
 	);
 	static RenderTarget* CreateFromTextures(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);

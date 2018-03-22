@@ -81,16 +81,11 @@ Renderer::Renderer(std::string title, Window* window) {
 	renderTarget = RenderTarget::CreateFromTextures(_device, attachments);
 	*/
 
-	std::vector<AttachmentInfo> attachmentInfo = {
+	AttachmentInfo attachmentInfo[] = {
 		{ capabilities.format.format,		vk::ImageUsageFlagBits::eColorAttachment,			vk::ImageLayout::ePresentSrcKHR, 1 },
 		{ vk::Format::eD16Unorm,			vk::ImageUsageFlagBits::eDepthStencilAttachment,	vk::ImageLayout::eDepthStencilAttachmentOptimal, 1 } };
 
-	std::vector<Texture*> attachments(attachmentInfo.size());
-	for (int i = 0; i < attachments.size(); i++) {
-		attachments[i] = Texture::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo[i].format, attachmentInfo[i].usage, attachmentInfo[i].imageLayout, nullptr);
-	}
-	//_device->allocate(*(std::vector<Resource*> *)&attachments, vk::MemoryPropertyFlagBits::eDeviceLocal);
-	renderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, &swapchain.view);
+	renderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, attachmentInfo, 2, &swapchain.view);
 	
 	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);

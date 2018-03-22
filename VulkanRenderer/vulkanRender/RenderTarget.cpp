@@ -11,12 +11,12 @@ RenderTarget::RenderTarget()
 {
 }
 
-RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<AttachmentInfo> req, std::vector<vk::ImageView>* frameBufferImageViews)
+RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<vk::ImageView>* frameBufferImageViews)
 {
 	RenderTarget* rt = new RenderTarget();
 	rt->resolution = r;
 	rt->_device = d;
-	if (req.size() < 2) {
+	if (attachmentCount < 2) {
 		assert("colourReq cannot be empty");
 	}
 
@@ -37,8 +37,8 @@ RenderTarget* RenderTarget::Create(EnDevice* d, vk::Extent2D r, std::vector<Atta
 			.setCompareOp(vk::CompareOp::eNever)
 			.setUnnormalizedCoordinates(0);
 	rt->sampler = d->createSampler(samplerInfo);
-	rt->attachments.resize(req.size());
-	for (int i = 0; i < req.size(); i++) {
+	rt->attachments.resize(attachmentCount);
+	for (int i = 0; i < attachmentCount; i++) {
 		rt->attachments[i] = Texture::Create(d, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
 	}
 	rt->SetUp(frameBufferImageViews);
