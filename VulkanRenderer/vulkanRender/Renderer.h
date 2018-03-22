@@ -42,12 +42,14 @@ private:
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
 	void BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer);
+	void BuildOffscreenCommandBuffer();
 	bool debugMarkerActive = false;
 	bool prepared = false;
 	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo = vk::DebugReportCallbackCreateInfoEXT();
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
 
 	std::vector<vk::CommandBuffer> _draw;
+	vk::CommandBuffer _offscreenDraw;
 
 	vk::Semaphore _completeRender[FRAME_LAG];
 	vk::Semaphore _offscreenRender;
@@ -61,7 +63,8 @@ private:
 	Mesh* _plane = nullptr;
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
-	Material* _material = nullptr;
+	Material* _presentMaterial = nullptr;
+	Material* _deferredMaterial = nullptr;
 	UniformInterface* _unfirom = nullptr;
 	vk::Instance instance = nullptr;
 	EnDevice* _device = nullptr;

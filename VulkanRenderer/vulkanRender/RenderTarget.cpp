@@ -115,7 +115,7 @@ void RenderTarget::SetUp(std::vector<vk::ImageView>* frameBufferImageViews)
 		}
 	} else {
 		std::vector<vk::ImageView> attachmentsViews(attachments.size());
-		for (int i = 0; i < attachments.size(); i++) {
+		for (int i = 0; i < attachmentsViews.size(); i++) {
 			attachmentsViews[i] = attachments[i]->getImageView();
 		}
 

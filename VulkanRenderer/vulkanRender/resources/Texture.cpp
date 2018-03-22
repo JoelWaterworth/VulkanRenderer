@@ -52,7 +52,7 @@ Texture * Texture::Create(EnDevice * device, path p)
 	auto const info = vk::CommandBufferBeginInfo();
 	device->createCommandBuffer(vk::CommandBufferLevel::ePrimary, 1, &copycmd);
 	copycmd.begin(info);
-	//t->setImageLayout(copycmd, vk::ImageAspectFlagBits::eColor, vk::ImageLayout::eTransferDstOptimal, t->subResource);
+	t->setImageLayout(copycmd, vk::ImageAspectFlagBits::eColor, vk::ImageLayout::eTransferDstOptimal, t->subResource);
 	auto const bufferImageCopy = vk::BufferImageCopy()
 		.setImageSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0, 0, 1))
 		.setImageExtent(vk::Extent3D(width, height, 1))

@@ -74,14 +74,25 @@ Renderer::Renderer(std::string title, Window* window) {
 	
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
-	std::vector<ShaderLayout> shaderLayout(1);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
-	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
-	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
-	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), shaderLayout);
+	std::vector<ShaderLayout> deferredLayout(1);
+	deferredLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
+	std::vector<ShaderLayout> presentLayout(3);
+	presentLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
+	presentLayout[1] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 1, 0);
+	presentLayout[2] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 2, 0);
+	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
+	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
-	std::vector<UniformBinding> uniforms = { { _texture, 0} };
-	_material = Material::CreateMaterialWithShader(_device, _presentShader, uniforms);
+	std::vector<UniformBinding> _presentUniforms = {
+		{ DeferredRenderTarget->getAttachments()[0], 0, },
+		{ DeferredRenderTarget->getAttachments()[1], 1, },
+		{ DeferredRenderTarget->getAttachments()[2], 2, },
+	};
+	std::vector<UniformBinding> _deferredUniforms = { { _texture, 0 } };
+	
+	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
+	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, _deferredUniforms);
 	CreateFencesSemaphore();
 
 	prepared = true;
@@ -100,7 +111,8 @@ Renderer::~Renderer() {
 	delete _plane;
 	delete PresentRenderTarget;
 	delete DeferredRenderTarget;
-	delete _material;
+	delete _presentMaterial;
+	delete _deferredMaterial;
 	_device->waitForFences(FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
 	for (int i = 0; i < FRAME_LAG; i++) {
 		_device->destroySemaphore(_completeRender[i]);
@@ -137,14 +149,19 @@ void Renderer::Run() {
 	}
 
 	vk::PipelineStageFlags const pipeStageFlags = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	auto const submitInfo = vk::SubmitInfo()
+	auto submitInfo = vk::SubmitInfo()
 		.setPWaitDstStageMask(&pipeStageFlags)
 		.setWaitSemaphoreCount(1)
 		.setPWaitSemaphores(&_presentComplete[_frameIndex])
 		.setCommandBufferCount(1)
-		.setPCommandBuffers(&_draw[currentBuffer])
+		.setPCommandBuffers(&_offscreenDraw)
 		.setSignalSemaphoreCount(1)
-		.setPSignalSemaphores(&_completeRender[_frameIndex]);
+		.setPSignalSemaphores(&_offscreenRender);
+
+	VK_CHECK_RESULT(_device->getGraphicsQueue().submit(1, &submitInfo, vk::Fence()));
+	submitInfo.pWaitSemaphores = &_offscreenRender;
+	submitInfo.pSignalSemaphores = &_completeRender[_frameIndex];
+	submitInfo.pCommandBuffers = &_draw[_frameIndex];
 
 	VK_CHECK_RESULT(_device->getGraphicsQueue().submit(1, &submitInfo, vk::Fence()));
 
@@ -303,18 +320,21 @@ void Renderer::CreateFencesSemaphore() {
 		VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_completeRender[i]));
 		VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_presentComplete[i]));
 	}
+	VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_offscreenRender));
 
 	auto const cmd = vk::CommandBufferAllocateInfo()
 		.setCommandPool(_device->_commandPool)
 		.setLevel(vk::CommandBufferLevel::ePrimary)
-		.setCommandBufferCount(swapchain.view.size());
+		.setCommandBufferCount(swapchain.view.size() + 1);
 
-	_draw.resize(swapchain.view.size());
+	_draw.resize(swapchain.view.size() + 1);
 	_device->allocateCommandBuffers(&cmd, _draw.data() );
-
+	_offscreenDraw = _draw[swapchain.view.size()];
+	_draw.pop_back();
 	for (auto& cmd : _draw) {
 		BuildPresentCommandBuffer(cmd);
 	}
+	BuildOffscreenCommandBuffer();
 }
 
 void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
@@ -335,7 +355,7 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipeline());
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipelineLayout(), 0, 1, &_material->getDescriptorSet(), 0, nullptr);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipelineLayout(), 0, 1, &_presentMaterial->getDescriptorSet(), 0, nullptr);
 
 	auto const viewport =
 		vk::Viewport().setWidth(resolution.width).setHeight(resolution.height).setMinDepth(0.0f).setMaxDepth(1.0f);
@@ -348,4 +368,41 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	commandBuffer.end();
 	assert(res == vk::Result::eSuccess);
 	currentBuffer = currentBuffer + 1;
+}
+
+void Renderer::BuildOffscreenCommandBuffer()
+{
+	auto const commandInfo = vk::CommandBufferBeginInfo().setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+	auto const resolution = DeferredRenderTarget->getResolution();
+
+	vk::ClearValue const clearValues[] = { 
+		vk::ClearColorValue(std::array<float, 4>({ { 1.0f, 0.0f, 0.0f, 1.0f } })),
+		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 1.0f, 0.0f, 1.0f } })),
+		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 1.0f, 1.0f } })),
+		vk::ClearDepthStencilValue(1.0f, 0u)
+	};
+	auto const passInfo = vk::RenderPassBeginInfo()
+		.setRenderPass(DeferredRenderTarget->getRenderPass())
+		.setFramebuffer(DeferredRenderTarget->getFramebuffers()[0])
+		.setRenderArea(vk::Rect2D(vk::Offset2D(), resolution))
+		.setClearValueCount(4)
+		.setPClearValues(clearValues);
+
+	auto res = _offscreenDraw.begin(&commandInfo);
+	assert(res == vk::Result::eSuccess);
+
+	_offscreenDraw.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
+	_offscreenDraw.bindPipeline(vk::PipelineBindPoint::eGraphics, _deferredShader->GetPipeline());
+	_offscreenDraw.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _deferredShader->GetPipelineLayout(), 0, 1, &_deferredMaterial->getDescriptorSet(), 0, nullptr);
+
+	auto const viewport =
+		vk::Viewport().setWidth(resolution.width).setHeight(resolution.height).setMinDepth(0.0f).setMaxDepth(1.0f);
+	_offscreenDraw.setViewport(0, 1, &viewport);
+
+	vk::Rect2D const scissor(vk::Offset2D(0, 0), resolution);
+	_offscreenDraw.setScissor(0, 1, &scissor);
+	_monkey->draw(_offscreenDraw);
+	_offscreenDraw.endRenderPass();
+	_offscreenDraw.end();
+	assert(res == vk::Result::eSuccess);
 }
