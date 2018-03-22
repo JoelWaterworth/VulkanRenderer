@@ -27,9 +27,9 @@ Texture * Texture::Create(EnDevice * device, path p)
 		.setMagFilter(vk::Filter::eNearest)
 		.setMinFilter(vk::Filter::eNearest)
 		.setMipmapMode(vk::SamplerMipmapMode::eLinear)
-		.setAddressModeU(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeV(vk::SamplerAddressMode::eRepeat)
-		.setAddressModeW(vk::SamplerAddressMode::eRepeat)
+		.setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+		.setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
 		.setMipLodBias(0.0f)
 		.setMinLod(0.0f)
 		.setMaxLod(1.0f)
@@ -66,8 +66,6 @@ Texture * Texture::Create(EnDevice * device, path p)
 	t->_descriptor = vk::DescriptorImageInfo(t->_sampler, t->_imageView, vk::ImageLayout::eGeneral);
 	device->destroyBuffer(staging.first);
 	device->freeMemory(staging.second);
-	VkImage image = *reinterpret_cast<VkImage*>(&t->_image);
-	device->setObjectName((uint64_t)image, vk::DebugReportObjectTypeEXT::eImage, "texture");
 	return t;
 }
 

@@ -54,8 +54,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 
 Renderer::Renderer(std::string title, Window* window) {
 	initInstance(title);
+	printf("initInstance");
 	surface = window->createSurface(instance);
+	printf("createSurface");
 	initDevice();
+	printf("initDevice");
 	GetCapabilities();
 	CreateSwapchain();
 	AttachmentInfo defferedAttachmentInfo[] = {
@@ -72,9 +75,8 @@ Renderer::Renderer(std::string title, Window* window) {
 	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
 	DeferredRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, defferedAttachmentInfo, 4);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
-	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
-
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
+	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	std::vector<ShaderLayout> deferredLayout(1);
 	deferredLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	std::vector<ShaderLayout> presentLayout(3);
@@ -92,6 +94,7 @@ Renderer::Renderer(std::string title, Window* window) {
 	
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, _deferredUniforms);
+	printf("begin CreateFencesSemaphores");
 	CreateFencesSemaphore();
 
 	prepared = true;
@@ -382,9 +385,9 @@ void Renderer::BuildOffscreenCommandBuffer()
 	auto const resolution = DeferredRenderTarget->getResolution();
 
 	vk::ClearValue const clearValues[] = { 
-		vk::ClearColorValue(std::array<float, 4>({ { 1.0f, 0.0f, 0.0f, 1.0f } })),
-		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 1.0f, 0.0f, 1.0f } })),
-		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 1.0f, 1.0f } })),
+		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 0.0f, 1.0f } })),
+		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 0.0f, 1.0f } })),
+		vk::ClearColorValue(std::array<float, 4>({ { 0.0f, 0.0f, 0.0f, 1.0f } })),
 		vk::ClearDepthStencilValue(1.0f, 0u)
 	};
 	auto const passInfo = vk::RenderPassBeginInfo()
