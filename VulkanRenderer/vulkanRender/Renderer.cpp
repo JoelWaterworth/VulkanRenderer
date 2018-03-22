@@ -5,7 +5,7 @@
 #include <glm\glm.hpp>
 #include "../Window.h"
 #include "util.h"
-
+#include <vulkan\vulkan.h>
 #include "resources\UniformBuffer.h"
 
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
@@ -71,10 +71,10 @@ Renderer::Renderer(std::string title, Window* window) {
 
 	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
 	DeferredRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, defferedAttachmentInfo, 4);
-	
-	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
-	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
+	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
+
+	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	std::vector<ShaderLayout> deferredLayout(1);
 	deferredLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	std::vector<ShaderLayout> presentLayout(3);
@@ -83,7 +83,6 @@ Renderer::Renderer(std::string title, Window* window) {
 	presentLayout[2] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 2, 0);
 	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
-	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
 	std::vector<UniformBinding> _presentUniforms = {
 		{ DeferredRenderTarget->getAttachments()[0], 0, },
 		{ DeferredRenderTarget->getAttachments()[1], 1, },
@@ -102,7 +101,6 @@ Renderer::~Renderer() {
 	_device->waitIdle();
 	_texture->destroy(_device);
 	delete _texture;
-	delete _unfirom;
 	delete _presentShader;
 	delete _deferredShader;
 	_monkey->destroy(_device);
@@ -119,6 +117,7 @@ Renderer::~Renderer() {
 		_device->destroySemaphore(_presentComplete[i]);
 		_device->destroyFence(_fences[i]);
 	}
+	_device->destroySemaphore(_offscreenRender);
 	_device->destroySwapchainKHR(swapchain.handle);
 	for (auto frame : swapchain.view) {
 		_device->destroyImageView(frame);
@@ -197,14 +196,14 @@ void Renderer::initInstance(std::string title) {
 
 	dbgCreateInfo
 		.setPfnCallback((PFN_vkDebugReportCallbackEXT)vulkanDebugCallback)
-		.setFlags(vk::DebugReportFlagBitsEXT::eWarning);
+		.setFlags(vk::DebugReportFlagBitsEXT::eWarning | vk::DebugReportFlagBitsEXT::eError);
 
 	auto const appInfo = vk::ApplicationInfo()
 		.setPApplicationName(title.c_str())
 		.setPEngineName(title.c_str())
 		.setEngineVersion(0)
 		.setApplicationVersion(0)
-		.setApiVersion(VK_MAKE_VERSION(1, 0, 65));
+		.setApiVersion(VK_API_VERSION_1_0);
 
 	auto const inst_info = vk::InstanceCreateInfo()
 		.setPApplicationInfo(&appInfo)
@@ -218,6 +217,7 @@ void Renderer::initInstance(std::string title) {
 }
 
 void Renderer::initDebug() {
+
 	CreateDebugReportCallbackEXT = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(instance.getProcAddr("vkCreateDebugReportCallbackEXT"));
 	CreateDebugReportCallbackEXT(this->instance, reinterpret_cast<const VkDebugReportCallbackCreateInfoEXT*>(&dbgCreateInfo), NULL, &debugReport);
 }
@@ -353,6 +353,11 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	auto res = commandBuffer.begin(&commandInfo);
 	assert(res == vk::Result::eSuccess);
 
+	std::string text = "PresentCommandBuffer ";
+	text += std::to_string(currentBuffer);
+
+	_device->beginRegion(commandBuffer, text.c_str(), std::array<float, 4>({ { 1.0f, 0.0f, 0.0f, 1.0f } }));
+
 	commandBuffer.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipeline());
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _presentShader->GetPipelineLayout(), 0, 1, &_presentMaterial->getDescriptorSet(), 0, nullptr);
@@ -365,6 +370,7 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 	commandBuffer.setScissor(0, 1, &scissor);
 	_plane->draw(commandBuffer);
 	commandBuffer.endRenderPass();
+	_device->endRegion(commandBuffer);
 	commandBuffer.end();
 	assert(res == vk::Result::eSuccess);
 	currentBuffer = currentBuffer + 1;
@@ -391,6 +397,8 @@ void Renderer::BuildOffscreenCommandBuffer()
 	auto res = _offscreenDraw.begin(&commandInfo);
 	assert(res == vk::Result::eSuccess);
 
+	_device->beginRegion(_offscreenDraw, "OffscreenCommandBuffer", std::array<float, 4>({ { 1.0f, 0.0f, 0.0f, 1.0f } }));
+
 	_offscreenDraw.beginRenderPass(&passInfo, vk::SubpassContents::eInline);
 	_offscreenDraw.bindPipeline(vk::PipelineBindPoint::eGraphics, _deferredShader->GetPipeline());
 	_offscreenDraw.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, _deferredShader->GetPipelineLayout(), 0, 1, &_deferredMaterial->getDescriptorSet(), 0, nullptr);
@@ -403,6 +411,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 	_offscreenDraw.setScissor(0, 1, &scissor);
 	_monkey->draw(_offscreenDraw);
 	_offscreenDraw.endRenderPass();
+	_device->endRegion(_offscreenDraw);
 	_offscreenDraw.end();
 	assert(res == vk::Result::eSuccess);
 }

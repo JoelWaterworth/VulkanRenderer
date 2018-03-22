@@ -45,9 +45,9 @@ public:
 	void setUpmarkers();
 	void setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objectType, const char *name);
 	void setObjectTag(uint64_t object, vk::DebugReportObjectTypeEXT objectType, uint64_t name, size_t tageSize, const void *tag);
-	static void beginRegion(VkCommandBuffer cmdbuffer, const char* pMarkerName, glm::vec4 color);
-	static void insert(VkCommandBuffer cmdbuffer, const char* pMarkerName, glm::vec4 color);
-	static void endRegion(VkCommandBuffer cmdbuffer);
+	void beginRegion(vk::CommandBuffer cmdbuffer, const char* pMarkerName, std::array<float, 4Ui64> color);
+	void insert(vk::CommandBuffer cmdbuffer, const char* pMarkerName, std::array<float, 4Ui64> color);
+	void endRegion(vk::CommandBuffer cmdbuffer);
 
 private:
 

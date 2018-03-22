@@ -14,6 +14,7 @@ public:
 	virtual void destroy(EnDevice* device);
 	void* mapMemory(EnDevice* device);
 	void unMapMemory(EnDevice* device);
+	void setObjectName(EnDevice* device, const char* name);
 private:
 };
 

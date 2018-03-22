@@ -35,6 +35,7 @@ public:
 	void setImageLayout(vk::CommandBuffer cmd, vk::ImageAspectFlags ImageAspects, vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subResource);
 
 private:
+	bool bSampler = false;
 	vk::Image _image = nullptr;
 	vk::ImageView _imageView = nullptr;
 	vk::Sampler _sampler = nullptr;

@@ -47,7 +47,7 @@ Texture * Texture::Create(EnDevice * device, path p)
 		vk::ImageLayout::eUndefined,
 		device->createSampler(samplerInfo),
 		vk::MemoryPropertyFlagBits::eDeviceLocal);
-
+	t->bSampler = true;
 	vk::CommandBuffer copycmd;
 	auto const info = vk::CommandBufferBeginInfo();
 	device->createCommandBuffer(vk::CommandBufferLevel::ePrimary, 1, &copycmd);
@@ -120,7 +120,7 @@ void Texture::destroy(EnDevice * device)
 {
 	device->destroyImage(_image);
 	device->destroyImageView(_imageView);
-	if (_sampler) {
+	if (bSampler) {
 		device->destroySampler(_sampler);
 	}
 }

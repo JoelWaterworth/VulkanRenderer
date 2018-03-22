@@ -175,6 +175,9 @@ void EnDevice::setUpmarkers()
 		cmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)getProcAddr("vkCmdDebugMarkerEndEXT");
 		cmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)getProcAddr("vkCmdDebugMarkerInsertEXT");
 		debugMarkerActive = (debugMarkerSetObjectName != nullptr);
+		if (!debugMarkerActive) {
+			std::cout << "debugMarker not active" << std::endl;
+		}
 	}
 	else {
 		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled.";
@@ -190,6 +193,7 @@ void EnDevice::setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objec
 			.setObject(object)
 			.setPObjectName(name);
 		debugMarkerSetObjectName(*this, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&info));
+		std::cout << name << std::endl;
 	}
 }
 
@@ -197,16 +201,30 @@ void EnDevice::setObjectTag(uint64_t object, vk::DebugReportObjectTypeEXT object
 {
 }
 
-void EnDevice::beginRegion(VkCommandBuffer cmdbuffer, const char * pMarkerName, glm::vec4 color)
+void EnDevice::beginRegion(vk::CommandBuffer cmdbuffer, const char * pMarkerName, std::array<float, 4Ui64> color)
+{
+	// Check for valid function pointer (may not be present if not running in a debugging application)
+	if (debugMarkerActive)
+	{
+		auto const info = vk::DebugMarkerMarkerInfoEXT()
+			.setColor(color)
+			.setPMarkerName(pMarkerName);
+		cmdDebugMarkerBegin(cmdbuffer, reinterpret_cast<const VkDebugMarkerMarkerInfoEXT*>(&info));
+		std::cout << pMarkerName << std::endl;
+	}
+}
+
+void EnDevice::insert(vk::CommandBuffer cmdbuffer, const char * pMarkerName, std::array<float, 4Ui64> color)
 {
 }
 
-void EnDevice::insert(VkCommandBuffer cmdbuffer, const char * pMarkerName, glm::vec4 color)
+void EnDevice::endRegion(vk::CommandBuffer cmdbuffer)
 {
-}
-
-void EnDevice::endRegion(VkCommandBuffer cmdbuffer)
-{
+	// Check for valid function (may not be present if not runnin in a debugging application)
+	if (debugMarkerActive)
+	{
+		cmdDebugMarkerEnd(cmdbuffer);
+	}
 }
 
 EnDevice::EnDevice(vk::Instance instance, vk::SurfaceKHR surface)
@@ -264,5 +282,5 @@ EnDevice::EnDevice(vk::Instance instance, vk::SurfaceKHR surface)
 
 	auto const cmdPoolInfo = vk::CommandPoolCreateInfo().setQueueFamilyIndex(graphicsQueueFamilyIndex);
 	VK_CHECK_RESULT(createCommandPool(&cmdPoolInfo, nullptr, &_commandPool));
-	//setUpmarkers();
+	setUpmarkers();
 }

@@ -13,6 +13,6 @@ layout (location = 1) out vec2 o_uv;
 void main()
 {
 	o_Normal = i_normal;
-	o_uv = i_uv;
+	o_uv = (i_uv * 0.5) + vec2(0.5, 0.5);
     gl_Position = vec4(i_position, 1.0f);
 }

@@ -36,3 +36,9 @@ void EnBuffer::unMapMemory(EnDevice* device)
 {
 	device->unmapMemory(memory);
 }
+
+void EnBuffer::setObjectName(EnDevice * device, const char * name)
+{
+	VkBuffer b = *reinterpret_cast<VkBuffer*>(&buffer);
+	device->setObjectName((uint64_t)b, vk::DebugReportObjectTypeEXT::eBuffer, name);
+}

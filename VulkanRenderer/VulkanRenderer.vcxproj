@@ -76,14 +76,14 @@
     <IncludePath>C:\Users\Joel\Source\Repos\stb;C:\VulkanSDK\1.0.65.0\Include;$(IncludePath);C:\Library\DevIL Windows SDK\include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Joel\Source\Repos\stb;C:\Library\DevIL Windows SDK\include;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\include;C:\VulkanSDK\1.0.65.0\Include;$(IncludePath);C:\Library\DevIL Windows SDK\include</IncludePath>
-    <LibraryPath>C:\Library\DevIL Windows SDK\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\lib\vs2013\x64\release;C:\VulkanSDK\1.0.65.0\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Joel\Source\Repos\stb;C:\Library\DevIL Windows SDK\include;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\include;C:\VulkanSDK\1.1.70.1\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Library\DevIL Windows SDK\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\lib\vs2013\x64\release;C:\VulkanSDK\1.1.70.1\Lib;$(LibraryPath)</LibraryPath>
     <OutDir>$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\Joel\Source\Repos\stb;C:\Library\DevIL Windows SDK\include;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\include;C:\VulkanSDK\1.0.65.0\Include;$(IncludePath);C:\Library\DevIL Windows SDK\include</IncludePath>
-    <LibraryPath>C:\Library\DevIL Windows SDK\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\lib\vs2013\x64\release;C:\VulkanSDK\1.0.65.0\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\Joel\Source\Repos\stb;C:\Library\DevIL Windows SDK\include;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\include;C:\VulkanSDK\1.1.70.1\Include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Library\DevIL Windows SDK\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2015.1\lib\vs2013\x64\release;C:\VulkanSDK\1.1.70.1\Lib;$(LibraryPath)</LibraryPath>
     <OutDir>$(Configuration)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
   </PropertyGroup>
