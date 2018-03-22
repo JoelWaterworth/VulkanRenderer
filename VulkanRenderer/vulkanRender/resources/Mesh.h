@@ -29,6 +29,7 @@ public:
 	void draw(vk::CommandBuffer commandBuffer);
 	virtual void destroy(EnDevice* device);
 	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
+	void setBufferName(EnDevice* device, const char* name);
 private:
 	EnDevice * _device;
 	EnBuffer* indexBuffer;

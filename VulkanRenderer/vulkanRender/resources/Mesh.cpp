@@ -105,3 +105,8 @@ void Mesh::destroy(EnDevice * device)
 void Mesh::bindMemory(EnDevice * device, vk::DeviceMemory memory, uint64_t localOffset)
 {
 }
+
+void Mesh::setBufferName(EnDevice * device, const char * name)
+{
+	vertexBuffer->setObjectName(device, name);
+}

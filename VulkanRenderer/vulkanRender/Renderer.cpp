@@ -77,6 +77,7 @@ Renderer::Renderer(std::string title, Window* window) {
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
+	_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout(1);
 	deferredLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	std::vector<ShaderLayout> presentLayout(3);
@@ -321,6 +322,9 @@ void Renderer::CreateFencesSemaphore() {
 	for (uint32_t i = 0; i < FRAME_LAG; i++) {
 		VK_CHECK_RESULT(_device->createFence(&fence_ci, nullptr, &_fences[i]));
 		VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_completeRender[i]));
+		std::string preText = "PresentCommandBuffer ";
+		preText += std::to_string(i);
+		_device->setSemaphoreName(_completeRender[i], preText.c_str());
 		VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_presentComplete[i]));
 	}
 	VK_CHECK_RESULT(_device->createSemaphore(&semaphoreCreateInfo, nullptr, &_offscreenRender));

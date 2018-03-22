@@ -44,6 +44,7 @@ public:
 
 	void setUpmarkers();
 	void setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objectType, const char *name);
+	void setSemaphoreName(vk::Semaphore semaphore, const char *name);
 	void setObjectTag(uint64_t object, vk::DebugReportObjectTypeEXT objectType, uint64_t name, size_t tageSize, const void *tag);
 	void beginRegion(vk::CommandBuffer cmdbuffer, const char* pMarkerName, std::array<float, 4Ui64> color);
 	void insert(vk::CommandBuffer cmdbuffer, const char* pMarkerName, std::array<float, 4Ui64> color);

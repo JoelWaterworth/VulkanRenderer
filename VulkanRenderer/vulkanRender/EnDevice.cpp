@@ -1,4 +1,6 @@
 #include "EnDevice.h"
+#include <vulkan\vulkan.h>
+#include <vulkan\vk_icd.h>
 #include "util.h"
 #include <iostream>
 #include <functional>
@@ -167,21 +169,20 @@ void EnDevice::setUpmarkers()
 			break;
 		}
 	}
-
+	
 	if (debugExtensionPresent) {
 		debugMarkerSetObjectTag = reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(getProcAddr("vkDebugMarkerSetObjectTagEXT"));
 		debugMarkerSetObjectName = reinterpret_cast<PFN_vkDebugMarkerSetObjectNameEXT>(getProcAddr("vkDebugMarkerSetObjectNameEXT"));
-		cmdDebugMarkerBegin = (PFN_vkCmdDebugMarkerBeginEXT)getProcAddr("vkCmdDebugMarkerBeginEXT");
-		cmdDebugMarkerEnd = (PFN_vkCmdDebugMarkerEndEXT)getProcAddr("vkCmdDebugMarkerEndEXT");
-		cmdDebugMarkerInsert = (PFN_vkCmdDebugMarkerInsertEXT)getProcAddr("vkCmdDebugMarkerInsertEXT");
+		cmdDebugMarkerBegin = reinterpret_cast<PFN_vkCmdDebugMarkerBeginEXT>(getProcAddr("vkCmdDebugMarkerBeginEXT"));
+		cmdDebugMarkerEnd = reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(getProcAddr("vkCmdDebugMarkerEndEXT"));
+		cmdDebugMarkerInsert = reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(getProcAddr("vkCmdDebugMarkerInsertEXT"));
 		debugMarkerActive = (debugMarkerSetObjectName != nullptr);
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}
 	}
 	else {
-		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled.";
-		std::cout << "Try running from inside a Vulkan graphics debugger (e.g. RenderDoc)" << std::endl;
+		std::cout << "Warning: " << VK_EXT_DEBUG_MARKER_EXTENSION_NAME << " not present, debug markers are disabled." << std::endl;
 	}
 }
 
@@ -195,6 +196,12 @@ void EnDevice::setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objec
 		debugMarkerSetObjectName(*this, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&info));
 		std::cout << name << std::endl;
 	}
+}
+
+void EnDevice::setSemaphoreName(vk::Semaphore semaphore, const char * name)
+{
+	VkSemaphore s = *reinterpret_cast<VkSemaphore*>(&semaphore);
+	//setObjectName((uint64_t)s, vk::DebugReportObjectTypeEXT::eSemaphore, name);
 }
 
 void EnDevice::setObjectTag(uint64_t object, vk::DebugReportObjectTypeEXT objectType, uint64_t name, size_t tageSize, const void * tag)
