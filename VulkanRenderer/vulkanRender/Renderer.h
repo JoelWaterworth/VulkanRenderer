@@ -50,13 +50,15 @@ private:
 	std::vector<vk::CommandBuffer> _draw;
 
 	vk::Semaphore _completeRender[FRAME_LAG];
+	vk::Semaphore _offscreenRender;
 	vk::Semaphore _presentComplete[FRAME_LAG];
 
 	vk::Fence _fences[FRAME_LAG];
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 	Texture* _texture = nullptr;
-	Mesh* _mesh = nullptr;
+	Mesh* _monkey = nullptr;
+	Mesh* _plane = nullptr;
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
 	Material* _material = nullptr;

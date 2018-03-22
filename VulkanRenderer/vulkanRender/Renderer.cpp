@@ -72,12 +72,13 @@ Renderer::Renderer(std::string title, Window* window) {
 	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
 	DeferredRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, defferedAttachmentInfo, 4);
 	
-	_mesh = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
+	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
+	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	std::vector<ShaderLayout> shaderLayout(1);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	shaderLayout[0] = ShaderLayout(vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, 0, 0);
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
-	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), shaderLayout);
+	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), shaderLayout);
 	_unfirom = UniformBuffer::CreateUniformBuffer<glm::vec3>(_device, glm::vec3(0.0f, 1.0f, 0.0f));
 	std::vector<UniformBinding> uniforms = { { _texture, 0} };
 	_material = Material::CreateMaterialWithShader(_device, _presentShader, uniforms);
@@ -92,9 +93,13 @@ Renderer::~Renderer() {
 	delete _texture;
 	delete _unfirom;
 	delete _presentShader;
-	_mesh->destroy(_device);
-	delete _mesh;
+	delete _deferredShader;
+	_monkey->destroy(_device);
+	delete _monkey;
+	_plane->destroy(_device);
+	delete _plane;
 	delete PresentRenderTarget;
+	delete DeferredRenderTarget;
 	delete _material;
 	_device->waitForFences(FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
 	for (int i = 0; i < FRAME_LAG; i++) {
@@ -338,7 +343,7 @@ void Renderer::BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer){
 
 	vk::Rect2D const scissor(vk::Offset2D(0, 0), resolution);
 	commandBuffer.setScissor(0, 1, &scissor);
-	_mesh->draw(commandBuffer);
+	_plane->draw(commandBuffer);
 	commandBuffer.endRenderPass();
 	commandBuffer.end();
 	assert(res == vk::Result::eSuccess);

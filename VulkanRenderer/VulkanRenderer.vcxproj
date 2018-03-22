@@ -180,7 +180,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\shaders\deferred.frag" />
-    <None Include="assets\shaders\Present.frag" />
     <None Include="assets\shaders\present.vert" />
     <None Include="packages.config" />
   </ItemGroup>
