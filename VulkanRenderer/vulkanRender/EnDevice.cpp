@@ -171,12 +171,13 @@ void EnDevice::setUpmarkers()
 	}
 	
 	if (debugExtensionPresent) {
-		debugMarkerSetObjectTag = reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(getProcAddr("vkDebugMarkerSetObjectTagEXT"));
-		debugMarkerSetObjectName = reinterpret_cast<PFN_vkDebugMarkerSetObjectNameEXT>(getProcAddr("vkDebugMarkerSetObjectNameEXT"));
-		cmdDebugMarkerBegin = reinterpret_cast<PFN_vkCmdDebugMarkerBeginEXT>(getProcAddr("vkCmdDebugMarkerBeginEXT"));
-		cmdDebugMarkerEnd = reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(getProcAddr("vkCmdDebugMarkerEndEXT"));
-		cmdDebugMarkerInsert = reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(getProcAddr("vkCmdDebugMarkerInsertEXT"));
-		debugMarkerActive = (debugMarkerSetObjectName != nullptr);
+		debugMarkerSetObjectTag		= reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(getProcAddr("vkDebugMarkerSetObjectTagEXT"));
+		debugMarkerSetObjectName	= reinterpret_cast<PFN_vkDebugMarkerSetObjectNameEXT>(getProcAddr("vkDebugMarkerSetObjectNameEXT"));
+		cmdDebugMarkerBegin			= reinterpret_cast<PFN_vkCmdDebugMarkerBeginEXT>(getProcAddr("vkCmdDebugMarkerBeginEXT"));
+		cmdDebugMarkerEnd			= reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(getProcAddr("vkCmdDebugMarkerEndEXT"));
+		cmdDebugMarkerInsert		= reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(getProcAddr("vkCmdDebugMarkerInsertEXT"));
+		debugMarkerActive = (debugMarkerSetObjectName != VK_NULL_HANDLE);
+		debugMarkerActive = false;
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}
@@ -191,9 +192,10 @@ void EnDevice::setObjectName(uint64_t object, vk::DebugReportObjectTypeEXT objec
 	if (debugMarkerActive) {
 		auto const info = vk::DebugMarkerObjectNameInfoEXT()
 			.setObjectType(objectType)
-			.setObject(object)
-			.setPObjectName(name);
-		debugMarkerSetObjectName(*this, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&info));
+			.setPObjectName(name)
+			.setObject(object);
+		VkDevice d = *reinterpret_cast<VkDevice*>(this);
+		debugMarkerSetObjectName(d, reinterpret_cast<const VkDebugMarkerObjectNameInfoEXT*>(&info));
 		std::cout << name << std::endl;
 	}
 }

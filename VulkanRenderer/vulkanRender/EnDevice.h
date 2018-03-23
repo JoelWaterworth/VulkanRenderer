@@ -4,6 +4,10 @@
 #include "resources\Resource.h"
 #include "glm\glm.hpp"
 
+#ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
+#define VULKAN_HPP_DISABLE_ENHANCED_MODE
+#endif // !VULKAN_HPP_DISABLE_ENHANCED_MODE
+
 using namespace std;
 
 struct Block {

@@ -17,6 +17,9 @@
 #define VULKAN_HPP_NO_EXCEPTIONS
 #endif // !VULKAN_HPP_NO_EXCEPTIONS
 
+#ifndef VULKAN_HPP_DISABLE_ENHANCED_MODE
+#define VULKAN_HPP_DISABLE_ENHANCED_MODE
+#endif // !VULKAN_HPP_DISABLE_ENHANCED_MODE
 
 struct SurfaceCapabilities {
 	vk::SurfaceCapabilitiesKHR capabilities;
