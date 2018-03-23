@@ -53,7 +53,8 @@ Texture * Texture::Create(Device * device, path p)
 
 	t->bSampler = true;
 	VkCommandBuffer copycmd;
-	auto const info = VkCommandBufferBeginInfo();
+	VkCommandBufferBeginInfo info = {};
+	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &copycmd);
 	vkBeginCommandBuffer(copycmd, &info);
 	t->setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, t->subResource);
@@ -144,6 +145,7 @@ VkDescriptorImageInfo * Texture::getImageInfo()
 void Texture::setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspects, VkImageLayout newImageLayout, VkImageSubresourceRange subResource)
 {
 	VkImageMemoryBarrier imageMemoryBarrier = {};
+	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	imageMemoryBarrier.oldLayout = _layout;
 	imageMemoryBarrier.newLayout = newImageLayout;
 	imageMemoryBarrier.image = _image;

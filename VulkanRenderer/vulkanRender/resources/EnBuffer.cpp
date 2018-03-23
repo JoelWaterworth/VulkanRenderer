@@ -31,7 +31,7 @@ void EnBuffer::destroy(Device* device) {
 void * EnBuffer::mapMemory(Device* device)
 {
 	void * ptr = nullptr;
-	vkMapMemory(device->handle(),memory, _offset, 0, size, &ptr);
+	vkMapMemory(device->handle(),memory, _offset, size, 0, &ptr);
 	return ptr;
 }
 
@@ -42,6 +42,5 @@ void EnBuffer::unMapMemory(Device* device)
 
 void EnBuffer::setObjectName(Device * device, const char * name)
 {
-	VkBuffer b = *reinterpret_cast<VkBuffer*>(&buffer);
-	device->setObjectName((uint64_t)b, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT, name);
+	device->setObjectName((uint64_t)buffer, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT, name);
 }

@@ -54,11 +54,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 
 Renderer::Renderer(std::string title, Window* window) {
 	initInstance(title);
-	printf("initInstance");
+	printf("initInstance\n");
 	surface = window->createSurface(instance);
-	printf("createSurface");
+	printf("createSurface\n");
 	initDevice();
-	printf("initDevice");
+	printf("initDevice\n");
 	GetCapabilities();
 	CreateSwapchain();
 	AttachmentInfo defferedAttachmentInfo[] = {
@@ -69,7 +69,7 @@ Renderer::Renderer(std::string title, Window* window) {
 	};
 
 	AttachmentInfo PresentAttachmentInfo[] = {
-		{ capabilities.format.format,		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1 },
+		{ capabilities.format.format,		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1 },
 		{ VK_FORMAT_D16_UNORM,			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1 } };
 
 	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
@@ -77,7 +77,8 @@ Renderer::Renderer(std::string title, Window* window) {
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
-	_monkey->setBufferName(_device, "monkey");
+	printf("load mesh complete\n");
+	//_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout(1);
 	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
 	std::vector<ShaderLayout> presentLayout(3);
@@ -95,7 +96,7 @@ Renderer::Renderer(std::string title, Window* window) {
 	
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, _deferredUniforms);
-	printf("begin CreateFencesSemaphores");
+	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
 	prepared = true;
@@ -153,6 +154,7 @@ void Renderer::Run() {
 
 	VkPipelineStageFlags const pipeStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.pWaitDstStageMask = &pipeStageFlags;
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &_presentComplete[_frameIndex];
@@ -169,6 +171,7 @@ void Renderer::Run() {
 	VK_CHECK_RESULT(vkQueueSubmit(_device->getGraphicsQueue(), 1, &submitInfo, VkFence()));
 
 	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &_completeRender[_frameIndex];
 	presentInfo.swapchainCount = 1;
@@ -197,7 +200,7 @@ void Renderer::initInstance(std::string title) {
 
 	instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	layer.push_back("VK_LAYER_LUNARG_standard_validation");
-
+	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
 	dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)vulkanDebugCallback;
 	dbgCreateInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
 
@@ -362,6 +365,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
 	clearValues[1].depthStencil = { 1.0f, 0u };
 
 	VkRenderPassBeginInfo passInfo = {};
+	passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	passInfo.renderPass = PresentRenderTarget->getRenderPass();
 	passInfo.framebuffer = PresentRenderTarget->getFramebuffers()[currentBuffer];
 	passInfo.renderArea.extent = resolution;
@@ -415,12 +419,13 @@ void Renderer::BuildOffscreenCommandBuffer()
 	clearValues[3].depthStencil = { 1.0f, 0u };
 
 	VkRenderPassBeginInfo passInfo = {};
+	passInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	passInfo.renderPass = DeferredRenderTarget->getRenderPass();
 	passInfo.framebuffer = DeferredRenderTarget->getFramebuffers()[0];
 	passInfo.renderArea.extent = resolution;
 	passInfo.clearValueCount = 4;
 	passInfo.pClearValues = clearValues;
-
+	
 	auto res = vkBeginCommandBuffer(_offscreenDraw, &commandInfo);
 	assert(res == VK_SUCCESS);
 

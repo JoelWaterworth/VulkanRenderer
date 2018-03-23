@@ -116,6 +116,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	vertexInputAttributeDescriptions[2].offset = sizeof(float) * 6;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
+	vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputStateInfo.vertexAttributeDescriptionCount = 3;
 	vertexInputStateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions;
 	vertexInputStateInfo.vertexBindingDescriptionCount = 1;

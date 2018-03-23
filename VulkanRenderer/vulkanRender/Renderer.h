@@ -48,7 +48,7 @@ private:
 	void BuildOffscreenCommandBuffer();
 	bool debugMarkerActive = false;
 	bool prepared = false;
-	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = VkDebugReportCallbackCreateInfoEXT();
+	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = {};
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
 
 	std::vector<VkCommandBuffer> _draw;

@@ -18,6 +18,7 @@ public:
 	Device(std::nullptr_t)
 		: _d(nullptr)
 	{}
+	~Device();
 	void deallocateAll();
 	VkPhysicalDeviceMemoryProperties memoryProperties;
 

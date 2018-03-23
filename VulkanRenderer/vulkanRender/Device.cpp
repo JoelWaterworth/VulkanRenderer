@@ -137,7 +137,6 @@ void Device::setUpmarkers()
 		cmdDebugMarkerEnd			= reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerEndEXT"));
 		cmdDebugMarkerInsert		= reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerInsertEXT"));
 		debugMarkerActive = (debugMarkerSetObjectName != VK_NULL_HANDLE);
-		debugMarkerActive = false;
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}
@@ -254,4 +253,7 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface)
 	cmdPoolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 	VK_CHECK_RESULT(vkCreateCommandPool(_d, &cmdPoolInfo, nullptr, &_commandPool));
 	setUpmarkers();
+}
+Device::~Device() {
+	vkDestroyDevice(_d, nullptr);
 }
