@@ -4,7 +4,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h> 
 
-Mesh* Mesh::Create(EnDevice* device, path p)
+Mesh* Mesh::Create(Device* device, path p)
 {
 	Assimp::Importer importer;
 	// And have it read the given file with some example postprocessing
@@ -56,13 +56,13 @@ Mesh* Mesh::Create(EnDevice* device, path p)
 	return new Mesh(device, vertexBuffer, indexBuffer);
 }
 
-Mesh::Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData)
+Mesh::Mesh(Device* device, std::vector<float> vertexData, std::vector<unsigned int> indexData)
 {
 	_device = device;
 	int32_t vertexBufferSize = vertexData.size() * sizeof(float);
 	int32_t indexBufferSize = indexData.size() * sizeof(unsigned int);
-	vertexBuffer = EnBuffer::Create(device, vk::BufferUsageFlagBits::eVertexBuffer, vertexBufferSize, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
-	indexBuffer = EnBuffer::Create(device, vk::BufferUsageFlagBits::eIndexBuffer, indexBufferSize, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
+	vertexBuffer = EnBuffer::Create(device, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, vertexBufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	indexBuffer = EnBuffer::Create(device, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indexBufferSize, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 	this->indexBufferLen = indexData.size();
 	
@@ -80,15 +80,17 @@ Mesh::~Mesh()
 	delete vertexBuffer;
 }
 
-void Mesh::draw(vk::CommandBuffer commandBuffer) {
-	commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer->buffer, &vertexOffset);
+void Mesh::draw(VkCommandBuffer commandBuffer) {
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer->buffer, &vertexOffset);
 
-	commandBuffer.bindIndexBuffer(
+	vkCmdBindIndexBuffer(
+		commandBuffer,
 			indexBuffer->buffer,
 			indexOffset,
-			vk::IndexType::eUint32);
+			VK_INDEX_TYPE_UINT32);
 	
-	commandBuffer.drawIndexed(
+	vkCmdDrawIndexed(
+		commandBuffer,
 			indexBufferLen,
 			1,
 			0,
@@ -96,17 +98,17 @@ void Mesh::draw(vk::CommandBuffer commandBuffer) {
 			1);
 }
 
-void Mesh::destroy(EnDevice * device)
+void Mesh::destroy(Device * device)
 {
 	indexBuffer->destroy(device);
 	vertexBuffer->destroy(device);
 }
 
-void Mesh::bindMemory(EnDevice * device, vk::DeviceMemory memory, uint64_t localOffset)
+void Mesh::bindMemory(Device * device, VkDeviceMemory memory, uint64_t localOffset)
 {
 }
 
-void Mesh::setBufferName(EnDevice * device, const char * name)
+void Mesh::setBufferName(Device * device, const char * name)
 {
 	vertexBuffer->setObjectName(device, name);
 }

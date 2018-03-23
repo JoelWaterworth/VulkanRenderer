@@ -1,10 +1,10 @@
 #include "Resource.h"
 
 
-void Resource::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset)
+void Resource::bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset)
 {
 }
 
-void Resource::destroy(EnDevice* device)
+void Resource::destroy(Device* device)
 {
 }

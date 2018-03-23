@@ -1,20 +1,20 @@
 #pragma once
 #include "Resource.h"
 #include <vulkan/vulkan.hpp>
-#include "../EnDevice.h"
+#include "../Device.h"
 
 class EnBuffer :
 	public Resource
 {
 public:
 	EnBuffer();
-	static EnBuffer* Create(EnDevice* device, vk::BufferUsageFlags usage, vk::DeviceSize size, vk::MemoryPropertyFlags flags);
-	vk::Buffer buffer;
-	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
-	virtual void destroy(EnDevice* device);
-	void* mapMemory(EnDevice* device);
-	void unMapMemory(EnDevice* device);
-	void setObjectName(EnDevice* device, const char* name);
+	static EnBuffer* Create(Device* device, VkBufferUsageFlags usage, VkDeviceSize size, VkMemoryPropertyFlags flags);
+	VkBuffer buffer;
+	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
+	virtual void destroy(Device* device);
+	void* mapMemory(Device* device);
+	void unMapMemory(Device* device);
+	void setObjectName(Device* device, const char* name);
 private:
 };
 

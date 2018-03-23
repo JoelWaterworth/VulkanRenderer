@@ -4,41 +4,44 @@ EnBuffer::EnBuffer() {
 
 }
 
-EnBuffer* EnBuffer::Create(EnDevice* device, vk::BufferUsageFlags usage, vk::DeviceSize size, vk::MemoryPropertyFlags flags)
+EnBuffer* EnBuffer::Create(Device* device, VkBufferUsageFlags usage, VkDeviceSize size, VkMemoryPropertyFlags flags)
 {
 	EnBuffer* buffer = new EnBuffer();
-	auto const bufferInfo = vk::BufferCreateInfo()
-		.setSize(size)
-		.setUsage(usage)
-		.setSharingMode(vk::SharingMode::eExclusive);
-	buffer->buffer = device->createBuffer(bufferInfo);
-	buffer->requirments = device->getBufferMemoryRequirements(buffer->buffer);
+	VkBufferCreateInfo bufferInfo = {};
+	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	vkCreateBuffer(device->handle(), &bufferInfo, nullptr, &buffer->buffer);
+	vkGetBufferMemoryRequirements(device->handle(), buffer->buffer, &buffer->requirments);
 	buffer->size = size;
 	device->attachResource(buffer, flags);
 	return buffer;
 }
 
 
-void EnBuffer::bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset) {
-	device->bindBufferMemory(buffer, memory, _offset + localOffset);
+void EnBuffer::bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset) {
+	vkBindBufferMemory(device->handle(), buffer, memory, _offset + localOffset);
 }
 
-void EnBuffer::destroy(EnDevice* device) {
-	device->destroyBuffer(buffer);
+void EnBuffer::destroy(Device* device) {
+	vkDestroyBuffer(device->handle(), buffer, nullptr);
 }
 
-void * EnBuffer::mapMemory(EnDevice* device)
+void * EnBuffer::mapMemory(Device* device)
 {
-	return device->mapMemory(memory, _offset, size);
+	void * ptr = nullptr;
+	vkMapMemory(device->handle(),memory, _offset, 0, size, &ptr);
+	return ptr;
 }
 
-void EnBuffer::unMapMemory(EnDevice* device)
+void EnBuffer::unMapMemory(Device* device)
 {
-	device->unmapMemory(memory);
+	vkUnmapMemory(device->handle(), memory);
 }
 
-void EnBuffer::setObjectName(EnDevice * device, const char * name)
+void EnBuffer::setObjectName(Device * device, const char * name)
 {
 	VkBuffer b = *reinterpret_cast<VkBuffer*>(&buffer);
-	device->setObjectName((uint64_t)b, vk::DebugReportObjectTypeEXT::eBuffer, name);
+	device->setObjectName((uint64_t)b, VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT, name);
 }

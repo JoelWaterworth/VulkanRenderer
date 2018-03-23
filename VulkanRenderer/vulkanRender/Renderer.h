@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_sdk_platform.h>
 
-#include "EnDevice.h"
+#include "Device.h"
 #include "RenderTarget.h"
 #include <string>
 #include "resources\Mesh.h"
@@ -22,10 +22,10 @@
 #endif // !VULKAN_HPP_DISABLE_ENHANCED_MODE
 
 struct SurfaceCapabilities {
-	vk::SurfaceCapabilitiesKHR capabilities;
-	vk::SurfaceTransformFlagBitsKHR preTransform;
+	VkSurfaceCapabilitiesKHR capabilities;
+	VkSurfaceTransformFlagBitsKHR preTransform;
 	uint32_t desiredImageCount;
-	vk::SurfaceFormatKHR format;
+	VkSurfaceFormatKHR format;
 };
 
 class Window;
@@ -44,21 +44,21 @@ private:
 	void GetCapabilities();
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
-	void BuildPresentCommandBuffer(vk::CommandBuffer commandBuffer);
+	void BuildPresentCommandBuffer(VkCommandBuffer commandBuffer);
 	void BuildOffscreenCommandBuffer();
 	bool debugMarkerActive = false;
 	bool prepared = false;
-	vk::DebugReportCallbackCreateInfoEXT dbgCreateInfo = vk::DebugReportCallbackCreateInfoEXT();
+	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = VkDebugReportCallbackCreateInfoEXT();
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
 
-	std::vector<vk::CommandBuffer> _draw;
-	vk::CommandBuffer _offscreenDraw;
+	std::vector<VkCommandBuffer> _draw;
+	VkCommandBuffer _offscreenDraw;
 
-	vk::Semaphore _completeRender[FRAME_LAG];
-	vk::Semaphore _offscreenRender;
-	vk::Semaphore _presentComplete[FRAME_LAG];
+	VkSemaphore _completeRender[FRAME_LAG];
+	VkSemaphore _offscreenRender;
+	VkSemaphore _presentComplete[FRAME_LAG];
 
-	vk::Fence _fences[FRAME_LAG];
+	VkFence _fences[FRAME_LAG];
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 	Texture* _texture = nullptr;
@@ -69,16 +69,16 @@ private:
 	Material* _presentMaterial = nullptr;
 	Material* _deferredMaterial = nullptr;
 	UniformInterface* _unfirom = nullptr;
-	vk::Instance instance = nullptr;
-	EnDevice* _device = nullptr;
+	VkInstance instance = nullptr;
+	Device* _device = nullptr;
 	SurfaceCapabilities capabilities;
-	vk::SurfaceKHR surface = nullptr;
+	VkSurfaceKHR surface = nullptr;
 	RenderTarget* PresentRenderTarget = nullptr;
 	RenderTarget* DeferredRenderTarget = nullptr;
 	struct {
-		vk::SwapchainKHR handle;
-		std::vector<vk::Image> images;
-		std::vector<vk::ImageView> view;
+		VkSwapchainKHR handle;
+		std::vector<VkImage> images;
+		std::vector<VkImageView> view;
 	} swapchain;
 };
 

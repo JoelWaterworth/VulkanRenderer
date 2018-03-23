@@ -3,39 +3,14 @@
 #include <vulkan/vk_sdk_platform.h>
 #include <vector>
 #include <utility>
-#include "EnDevice.h"
+#include "Device.h"
 #include "resources\Texture.h"
 
 struct AttachmentInfo {
-	vk::Format format;
-	vk::ImageUsageFlags usage;
-	vk::ImageLayout imageLayout;
+	VkFormat format;
+	VkImageUsageFlags usage;
+	VkImageLayout imageLayout;
 	uint32_t layerCount;
-};
-
-class Attachment
-{
-public:
-	Attachment();
-	Attachment(vk::Image img,
-		vk::Format fmat,
-		vk::ImageUsageFlags u,
-		vk::DescriptorImageInfo desInfo): 
-			image(img),
-			format(fmat),
-			usage(u),
-			descriptor(desInfo){};
-	static std::pair<std::vector<Attachment>, vk::DeviceMemory> createAttachement(EnDevice* device, vk::Extent2D extent, vk::Sampler sampler, std::vector<AttachmentInfo> info);
-private:
-	vk::Image image;
-	vk::Format format;
-	vk::ImageUsageFlags usage;
-	vk::DescriptorImageInfo descriptor;
-public:
-	inline vk::Image getImage() { return image; };
-	inline vk::Format getFormat() { return format; };
-	inline vk::ImageUsageFlags getUsage() { return usage; };
-	inline vk::DescriptorImageInfo getDescriptor() { return descriptor; };
 };
 
 class RenderTarget
@@ -43,28 +18,28 @@ class RenderTarget
 public:
 	RenderTarget();
 	static RenderTarget* Create(
-		EnDevice* device, 
-		vk::Extent2D resloution, 
+		Device* device, 
+		VkExtent2D resloution, 
 		AttachmentInfo* req,
 		uint32_t attachmentNumber,
-		std::vector<vk::ImageView>* framebuffers = nullptr
+		std::vector<VkImageView>* framebuffers = nullptr
 	);
-	static RenderTarget* CreateFromTextures(EnDevice* device, std::vector<Texture*> attachments, std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
-	void SetUp(std::vector<vk::ImageView>* frameBufferImageViews = nullptr);
+	static RenderTarget* CreateFromTextures(Device* device, std::vector<Texture*> attachments, std::vector<VkImageView>* frameBufferImageViews = nullptr);
+	void SetUp(std::vector<VkImageView>* frameBufferImageViews = nullptr);
 	~RenderTarget();
 
 	inline std::vector<Texture*> getAttachments() const { return attachments; }
-	inline vk::Extent2D getResolution() const { return resolution; };
+	inline VkExtent2D getResolution() const { return resolution; };
 	inline size_t getAttachmentNum() const { return attachments.size(); }
 	inline size_t getColourAttachmentNum() const { return attachments.size() - 1; }
-	inline vk::RenderPass getRenderPass() const { return renderPass; }
-	inline std::vector<vk::Framebuffer> getFramebuffers() const { return framebuffers; }
+	inline VkRenderPass getRenderPass() const { return renderPass; }
+	inline std::vector<VkFramebuffer> getFramebuffers() const { return framebuffers; }
 private:
-	vk::Extent2D resolution;
+	VkExtent2D resolution;
 	std::vector<Texture*> attachments;
-	std::vector<vk::Framebuffer> framebuffers;
-	vk::DeviceMemory memory;
-	EnDevice* _device = nullptr;
-	vk::Sampler sampler;
-	vk::RenderPass renderPass;
+	std::vector<VkFramebuffer> framebuffers;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
+	Device* _device = nullptr;
+	VkSampler sampler = VK_NULL_HANDLE;
+	VkRenderPass renderPass = VK_NULL_HANDLE;
 };

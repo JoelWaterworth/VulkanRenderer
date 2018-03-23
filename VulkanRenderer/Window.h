@@ -19,7 +19,7 @@ public:
 
 	HWND get() { return hWnd; }
 
-	vk::SurfaceKHR createSurface(vk::Instance inst);
+	VkSurfaceKHR createSurface(VkInstance inst);
 
 private:
 	HWND hWnd;

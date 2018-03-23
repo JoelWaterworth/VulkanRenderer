@@ -15,16 +15,16 @@ struct UniformBinding {
 class Material : public Resource
 {
 public:
-	Material(EnDevice * device, Shader * shader, vk::DescriptorPool descriptorPool, vk::DescriptorSet descriptorSet);
+	Material(Device * device, Shader * shader, VkDescriptorPool descriptorPool, VkDescriptorSet descriptorSet);
 	~Material();
-	static Material* CreateMaterialWithShader(EnDevice * device, Shader* shader, vector<UniformBinding> uniformBuffers);
-	inline vk::DescriptorSet getDescriptorSet() const { return _descriptorSet; };
+	static Material* CreateMaterialWithShader(Device * device, Shader* shader, vector<UniformBinding> uniformBuffers);
+	inline VkDescriptorSet* getDescriptorSet() { return &_descriptorSet; };
 private:
 	Shader* _shader;
-	vector<vk::DescriptorSetLayout> _descriptorSetLayout;
-	vk::DescriptorPool _descriptorPool;
-	vk::DescriptorSet _descriptorSet;
+	vector<VkDescriptorSetLayout> _descriptorSetLayout;
+	VkDescriptorPool _descriptorPool;
+	VkDescriptorSet _descriptorSet;
 
-	EnDevice* _device;
+	Device* _device;
 };
 

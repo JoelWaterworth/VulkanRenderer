@@ -2,7 +2,7 @@
 
 
 
-UniformBuffer::UniformBuffer(EnDevice * device, vk::DescriptorBufferInfo descriptor, vk::DeviceMemory memory, vk::Buffer buffer)
+UniformBuffer::UniformBuffer(Device * device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer)
 {
 	_device = device;
 	_descriptor = descriptor;
@@ -12,28 +12,33 @@ UniformBuffer::UniformBuffer(EnDevice * device, vk::DescriptorBufferInfo descrip
 
 UniformBuffer::~UniformBuffer()
 {
-	_device->destroyBuffer(_buffer);
-	_device->freeMemory(_memory);
+	vkDestroyBuffer(_device->handle(), _buffer, nullptr);
+	vkFreeMemory(_device->handle(), _memory, nullptr);
 }
 
-vk::DescriptorType UniformBuffer::getDescriptorType()
+VkDescriptorType UniformBuffer::getDescriptorType()
 {
-	return vk::DescriptorType::eUniformBuffer;
+	return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 }
 
-vk::DescriptorBufferInfo* UniformBuffer::getBufferInfo()
+VkDescriptorBufferInfo* UniformBuffer::getBufferInfo()
 {
 	return &_descriptor;
 }
-
-UniformBuffer * UniformBuffer::CreateUniformBufferBody(EnDevice * device, size_t size, const void* data)
+/*
+UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t size, const void* data)
 {
-	std::pair<vk::Buffer, vk::DeviceMemory> bufferMemory = device->allocateBuffer(size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible);
-	vk::Buffer buffer = bufferMemory.first;
-	vk::DeviceMemory memory = bufferMemory.second;
+	std::pair<VkBuffer, VkDeviceMemory> bufferMemory = device->allocateBuffer(size, VkBufferUsageFlagBits::eUniformBuffer, VkMemoryPropertyFlagBits::eHostVisible);
+	VkBuffer buffer = bufferMemory.first;
+	VkDeviceMemory memory = bufferMemory.second;
 
-	void* ptr = device->mapMemory(memory, 0, size);
+	void* ptr = nullptr;
+	vkMapMemory(device->handle(), memory, 0, size, 0, &ptr);
 	memcpy(ptr, data, size);
-	device->unmapMemory(memory);
-	return new UniformBuffer(device, vk::DescriptorBufferInfo().setBuffer(buffer).setOffset(0).setRange(VK_WHOLE_SIZE), memory, buffer);
-}
+	vkUnmapMemory(device->handle(), memory);
+	VkDescriptorBufferInfo descriptorInfo = {};
+	descriptorInfo.buffer = buffer;
+	descriptorInfo.offset = 0;
+	descriptorInfo.range = VK_WHOLE_SIZE;
+	return new UniformBuffer(device, descriptorInfo, memory, buffer);
+}*/

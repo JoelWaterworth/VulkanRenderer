@@ -4,17 +4,17 @@ UniformInterface::~UniformInterface()
 {
 }
 
-vk::DescriptorType UniformInterface::getDescriptorType()
+VkDescriptorType UniformInterface::getDescriptorType()
 {
-	return vk::DescriptorType();
+	return VkDescriptorType();
 }
 
-vk::DescriptorBufferInfo* UniformInterface::getBufferInfo()
+VkDescriptorBufferInfo* UniformInterface::getBufferInfo()
 {
 	return nullptr;
 }
 
-vk::DescriptorImageInfo * UniformInterface::getImageInfo()
+VkDescriptorImageInfo * UniformInterface::getImageInfo()
 {
 	return nullptr;
 }

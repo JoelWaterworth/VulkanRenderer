@@ -2,7 +2,7 @@
 #include "../util.h"
 #include <iostream>
 
-Material::Material(EnDevice * device, Shader * shader, vk::DescriptorPool descriptorPool, vk::DescriptorSet descriptorSet)
+Material::Material(Device * device, Shader * shader, VkDescriptorPool descriptorPool, VkDescriptorSet descriptorSet)
 {
 	_device = device;
 	_shader = shader;
@@ -12,44 +12,48 @@ Material::Material(EnDevice * device, Shader * shader, vk::DescriptorPool descri
 
 Material::~Material()
 {
-	_device->destroyDescriptorPool(_descriptorPool);
+	vkDestroyDescriptorPool(_device->handle(), _descriptorPool, nullptr);
 }
 
-Material * Material::CreateMaterialWithShader(EnDevice * device, Shader * shader, vector<UniformBinding> uniformBuffers)
+Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, vector<UniformBinding> uniformBuffers)
 {
-	std::vector<vk::DescriptorPoolSize> pool(shader->getTypes().size());
+	std::vector<VkDescriptorPoolSize> pool(shader->getTypes().size());
 	for (int i = 0; i < pool.size(); i++) {
-		pool[i] = vk::DescriptorPoolSize().setDescriptorCount(1).setType(shader->getTypes()[i]);
+		pool[i].descriptorCount = 1;
+		pool[i].type = shader->getTypes()[i];
 	};
 
-	auto const descriptorPoolInfo = vk::DescriptorPoolCreateInfo()
-		.setMaxSets(1)
-		.setPoolSizeCount(pool.size())
-		.setPPoolSizes(pool.data());
+	VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
+	descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descriptorPoolInfo.maxSets = 1;
+	descriptorPoolInfo.poolSizeCount = pool.size();
+	descriptorPoolInfo.pPoolSizes = pool.data();
 
-	vk::DescriptorPool descriptorPool = device->createDescriptorPool(descriptorPoolInfo);
+	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+	vkCreateDescriptorPool(device->handle(), &descriptorPoolInfo, nullptr, &descriptorPool);
 
-	auto const allocInfo = vk::DescriptorSetAllocateInfo()
-		.setDescriptorPool(descriptorPool)
-		.setDescriptorSetCount(1)
-		.setPSetLayouts(shader->getDesSetLayout().data());
+	VkDescriptorSetAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.pSetLayouts = shader->getDesSetLayout().data();
 
-	vk::DescriptorSet descriptorSet;
+	VkDescriptorSet descriptorSet;
 
-	device->allocateDescriptorSets(&allocInfo, &descriptorSet);
+	vkAllocateDescriptorSets(device->handle(), &allocInfo, &descriptorSet);
 
-	vector<vk::WriteDescriptorSet> descriptors(uniformBuffers.size());
+	vector<VkWriteDescriptorSet> descriptors(uniformBuffers.size());
 	for (int i = 0; descriptors.size() > i; i++) {
-		descriptors[i] = vk::WriteDescriptorSet()
-			.setDstSet(descriptorSet)
-			.setDstBinding(uniformBuffers[i].binding)
-			.setDstArrayElement(0)
-			.setDescriptorCount(1)
-			.setDescriptorType(uniformBuffers[i].uniform->getDescriptorType())
-			.setPBufferInfo(uniformBuffers[i].uniform->getBufferInfo())
-			.setPImageInfo(uniformBuffers[i].uniform->getImageInfo());
+		descriptors[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptors[i].dstSet = descriptorSet;
+		descriptors[i].dstBinding = uniformBuffers[i].binding;
+		descriptors[i].dstArrayElement = 0;
+		descriptors[i].descriptorCount = 1;
+		descriptors[i].descriptorType = uniformBuffers[i].uniform->getDescriptorType();
+		descriptors[i].pBufferInfo = uniformBuffers[i].uniform->getBufferInfo();
+		descriptors[i].pImageInfo = uniformBuffers[i].uniform->getImageInfo();
 	};
 
-	device->updateDescriptorSets(descriptors.size(), descriptors.data(), 0, nullptr);
+	vkUpdateDescriptorSets(device->handle(), descriptors.size(), descriptors.data(), 0, nullptr);
 	return new Material(device, shader, descriptorPool, descriptorSet);
 }

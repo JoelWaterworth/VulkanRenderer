@@ -5,25 +5,25 @@
 class UniformBuffer : public UniformInterface, public Resource
 {
 public:
-	UniformBuffer(EnDevice* device, vk::DescriptorBufferInfo descriptor, vk::DeviceMemory memory, vk::Buffer buffer);
+	UniformBuffer(Device* device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer);
 	virtual ~UniformBuffer();
 	template <class T>
-	static UniformBuffer* CreateUniformBuffer(EnDevice* device, T data);
+	static UniformBuffer* CreateUniformBuffer(Device* device, T data);
 
-	virtual vk::DescriptorType getDescriptorType();
-	virtual vk::DescriptorBufferInfo* getBufferInfo();
+	virtual VkDescriptorType getDescriptorType();
+	virtual VkDescriptorBufferInfo* getBufferInfo();
 
 private:
-	static UniformBuffer* CreateUniformBufferBody(EnDevice* device, size_t size, const void* data);
-	vk::DescriptorBufferInfo _descriptor;
-	vk::DeviceMemory _memory;
-	vk::Buffer _buffer;
+	static UniformBuffer* CreateUniformBufferBody(Device* device, size_t size, const void* data);
+	VkDescriptorBufferInfo _descriptor;
+	VkDeviceMemory _memory;
+	VkBuffer _buffer;
 
-	EnDevice* _device;
+	Device* _device;
 };
 
 template<class T>
-inline UniformBuffer * UniformBuffer::CreateUniformBuffer(EnDevice * device, T data)
+inline UniformBuffer * UniformBuffer::CreateUniformBuffer(Device * device, T data)
 {
 	size_t size = sizeof(data);
 	return UniformBuffer::CreateUniformBufferBody(device, size, &data);

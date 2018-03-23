@@ -1,17 +1,17 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 
-class EnDevice;
+class Device;
 
 class Resource
 {
 public:
-	inline vk::MemoryRequirements getRequirments() const { return requirments; };
-	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
-	virtual void destroy(EnDevice* device);
+	inline VkMemoryRequirements getRequirments() const { return requirments; };
+	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
+	virtual void destroy(Device* device);
 	uint64_t _offset;
-	vk::DeviceSize size;
-	vk::DeviceMemory memory = nullptr;
+	VkDeviceSize size;
+	VkDeviceMemory memory = nullptr;
 protected:
-	vk::MemoryRequirements requirments;
+	VkMemoryRequirements requirments;
 };

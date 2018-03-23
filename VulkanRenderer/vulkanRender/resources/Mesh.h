@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_sdk_platform.h>
-#include "../EnDevice.h"
+#include "../Device.h"
 #include "EnBuffer.h"
 #include "Resource.h"
 #include <vector>
@@ -23,15 +23,15 @@ Components operator |(Components lhs, Components rhs)
 class Mesh : public Resource
 {
 public:
-	static Mesh* Create(EnDevice* device, path p);
-	Mesh(EnDevice* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
+	static Mesh* Create(Device* device, path p);
+	Mesh(Device* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
 	~Mesh();
-	void draw(vk::CommandBuffer commandBuffer);
-	virtual void destroy(EnDevice* device);
-	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
-	void setBufferName(EnDevice* device, const char* name);
+	void draw(VkCommandBuffer commandBuffer);
+	virtual void destroy(Device* device);
+	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
+	void setBufferName(Device* device, const char* name);
 private:
-	EnDevice * _device;
+	Device * _device;
 	EnBuffer* indexBuffer;
 	EnBuffer* vertexBuffer;
 	uint32_t indexBufferLen;

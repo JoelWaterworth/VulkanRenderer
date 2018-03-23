@@ -103,10 +103,13 @@ bool Window::Update()
 	return bisOpen;
 }
 
-vk::SurfaceKHR Window::createSurface(vk::Instance inst)
+VkSurfaceKHR Window::createSurface(VkInstance inst)
 {
-	vk::SurfaceKHR surface = nullptr;
-	auto const createInfo = vk::Win32SurfaceCreateInfoKHR().setHinstance(hInstance).setHwnd(hWnd);
-	VK_CHECK_RESULT(inst.createWin32SurfaceKHR(&createInfo, NULL, &surface));
+	VkSurfaceKHR surface = nullptr;
+	VkWin32SurfaceCreateInfoKHR createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	createInfo.hinstance = hInstance;
+	createInfo.hwnd = hWnd;
+	VK_CHECK_RESULT(vkCreateWin32SurfaceKHR(inst, &createInfo, NULL, &surface));
 	return surface;
 }

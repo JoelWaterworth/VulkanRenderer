@@ -152,7 +152,7 @@
     <ClCompile Include="vulkanRender\UniformInterface.cpp" />
     <ClCompile Include="vulkanRender\resources\Material.cpp" />
     <ClCompile Include="vulkanRender\resources\Resource.cpp" />
-    <ClCompile Include="vulkanRender\EnDevice.cpp" />
+    <ClCompile Include="vulkanRender\Device.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="vulkanRender\resources\Mesh.cpp" />
@@ -169,7 +169,7 @@
     <ClInclude Include="vulkanRender\UniformInterface.h" />
     <ClInclude Include="vulkanRender\resources\Material.h" />
     <ClInclude Include="vulkanRender\resources\Resource.h" />
-    <ClInclude Include="vulkanRender\EnDevice.h" />
+    <ClInclude Include="vulkanRender\Device.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="vulkanRender\resources\Mesh.h" />
     <ClInclude Include="vulkanRender\Renderer.h" />

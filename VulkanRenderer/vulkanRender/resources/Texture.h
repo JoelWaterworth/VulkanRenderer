@@ -1,7 +1,6 @@
 #pragma once
 #include "Resource.h"
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 #include "../UniformInterface.h"
 #include <experimental/filesystem>
 
@@ -12,37 +11,37 @@ class Texture : public Resource, public UniformInterface
 public:
 	Texture();
 	static Texture* Create(
-		EnDevice* device,
+		Device* device,
 		path p
 		);
 	static Texture* Create(
-		EnDevice* device,
-		vk::Extent2D extent,
-		vk::Format format = vk::Format::eR16G16B16Sfloat,
-		vk::ImageUsageFlags _usage = vk::ImageUsageFlagBits::eColorAttachment,
-		vk::ImageLayout imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
-		vk::Sampler sampler = nullptr,
-		vk::MemoryPropertyFlags memoryProperties = vk::MemoryPropertyFlagBits::eDeviceLocal);
-	virtual void destroy(EnDevice* device);
-	virtual void bindMemory(EnDevice* device, vk::DeviceMemory memory, uint64_t localOffset);
-	inline vk::ImageView getImageView() const { return _imageView; }
-	inline vk::Image getImage() const { return _image; }
-	inline vk::Format getFormat() const { return _format; }
-	inline vk::ImageLayout getImageLayout() const { return _layout; }
-	inline vk::Extent2D getResloution() const { return _extent; }
-	virtual vk::DescriptorType getDescriptorType();
-	virtual vk::DescriptorImageInfo* getImageInfo();
-	void setImageLayout(vk::CommandBuffer cmd, vk::ImageAspectFlags ImageAspects, vk::ImageLayout newImageLayout, vk::ImageSubresourceRange subResource);
+		Device* device,
+		VkExtent2D extent,
+		VkFormat format = VK_FORMAT_R16G16B16_SFLOAT,
+		VkImageUsageFlags _usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VkImageLayout imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VkSampler sampler = nullptr,
+		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	virtual void destroy(Device* device);
+	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
+	inline VkImageView getImageView() const { return _imageView; }
+	inline VkImage getImage() const { return _image; }
+	inline VkFormat getFormat() const { return _format; }
+	inline VkImageLayout getImageLayout() const { return _layout; }
+	inline VkExtent2D getResloution() const { return _extent; }
+	virtual VkDescriptorType getDescriptorType();
+	virtual VkDescriptorImageInfo* getImageInfo();
+	void setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspects, VkImageLayout newImageLayout, VkImageSubresourceRange subResource);
 
 private:
 	bool bSampler = false;
-	vk::Image _image = nullptr;
-	vk::ImageView _imageView = nullptr;
-	vk::Sampler _sampler = nullptr;
-	vk::ImageUsageFlags _usage;
-	vk::Format _format;
-	vk::Extent2D _extent;
-	vk::ImageLayout _layout;
-	vk::DescriptorImageInfo _descriptor;
-	vk::ImageSubresourceRange subResource;
+	VkImage _image = nullptr;
+	VkImageView _imageView = nullptr;
+	VkSampler _sampler = nullptr;
+	VkImageUsageFlags _usage;
+	VkFormat _format;
+	VkExtent2D _extent;
+	VkImageLayout _layout;
+	VkDescriptorImageInfo _descriptor;
+	VkImageSubresourceRange subResource;
 };
