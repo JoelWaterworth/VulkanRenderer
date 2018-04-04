@@ -182,13 +182,15 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 
 	std::vector<VkDescriptorType> types(layouts.size());
 	std::vector<VkDescriptorSetLayoutBinding> layoutBinding(layouts.size());
+	uint8_t descriptorCount = 0;
 	for (int i = 0; i < layouts.size(); i++) {
 		layoutBinding[i].binding = layouts[i].binding;
 		layoutBinding[i].descriptorType = layouts[i].type;
 		layoutBinding[i].descriptorCount = 1;
 		layoutBinding[i].stageFlags = layouts[i].stage;
-
 		types[i] = layouts[i].type;
+
+		descriptorCount = (descriptorCount < (layouts[i].set + 1)) ? (layouts[i].set + 1) : descriptorCount;
 	}
 
 	VkDescriptorSetLayoutCreateInfo descriptorLayout = {};
@@ -242,6 +244,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	shader->_pipelineCache = pipelineCache;
 	shader->_desSetLayout = descLayouts;
 	shader->_types = types;
+	shader->_descriptorCount = descriptorCount;
 	return shader;
 }
 

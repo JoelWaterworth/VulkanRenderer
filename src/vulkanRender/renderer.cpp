@@ -92,13 +92,13 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 	std::vector<UniformBinding> _presentUniforms = {
-		{ DeferredRenderTarget->getAttachments()[0], 0, },
-		{ DeferredRenderTarget->getAttachments()[1], 1, },
-		{ DeferredRenderTarget->getAttachments()[2], 2, },
+		{ DeferredRenderTarget->getAttachments()[0], 0, 0},
+		{ DeferredRenderTarget->getAttachments()[1], 1, 0},
+		{ DeferredRenderTarget->getAttachments()[2], 2, 0},
 	};
 	glm::mat4 myMatrix = glm::translate(glm::mat4(), glm::vec3(0.5f, 0.0f, 0.0f));
 	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
-	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0}, { _texture, 1 } };
+	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0, 0}, { _texture, 1, 0} };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
@@ -392,7 +392,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
 
 	vkCmdBeginRenderPass(commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipeline());
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipelineLayout(), 0, 1, _presentMaterial->getDescriptorSet(), 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipelineLayout(), 0, _presentMaterial->getDescriptorSets()->size(), _presentMaterial->getDescriptorSets()->data(), 0, nullptr);
 
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
@@ -443,7 +443,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	vkCmdBindDescriptorSets(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipelineLayout(), 0, 1, _deferredMaterial->getDescriptorSet(), 0, nullptr);
+	vkCmdBindDescriptorSets(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipelineLayout(), 0, _deferredMaterial->getDescriptorSets()->size(), _deferredMaterial->getDescriptorSets()->data(), 0, nullptr);
 
 	VkViewport viewport = {};
 	viewport.height = resolution.height;

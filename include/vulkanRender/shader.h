@@ -43,12 +43,14 @@ public:
 
 	VkDescriptorSetLayout _desSetLayout;
 
+	inline uint8_t getDescriptorCount() const { return _descriptorCount; }
 	inline VkPipeline GetPipeline() const { return _pipeline; }
 	inline VkPipelineLayout GetPipelineLayout() const { return _pipelineLayout; }
 	inline vector<VkDescriptorType> getTypes() const { return _types; }
 	inline VkDescriptorSetLayout getDesSetLayout() const { return _desSetLayout; }
 
 private:
+	uint8_t _descriptorCount;
 	Device* _device;
 	VkPipeline _pipeline;
 	VkPipelineLayout _pipelineLayout;
