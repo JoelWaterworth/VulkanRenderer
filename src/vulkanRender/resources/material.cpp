@@ -38,14 +38,14 @@ Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, 
 	allocInfo.descriptorPool = descriptorPool;
 	allocInfo.pSetLayouts = &shader->_desSetLayout;
 
-	VkDescriptorSet descriptorSet;
+	vector<VkDescriptorSet> descriptorSet(1);
 
-	vkAllocateDescriptorSets(device->handle(), &allocInfo, &descriptorSet);
+	vkAllocateDescriptorSets(device->handle(), &allocInfo, descriptorSet.data());
 
 	vector<VkWriteDescriptorSet> descriptors(uniformBuffers.size());
 	for (int i = 0; descriptors.size() > i; i++) {
 		descriptors[i].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptors[i].dstSet = descriptorSet;
+		descriptors[i].dstSet = descriptorSet[0];
 		descriptors[i].dstBinding = uniformBuffers[i].binding;
 		descriptors[i].dstArrayElement = 0;
 		descriptors[i].descriptorCount = 1;
@@ -55,5 +55,5 @@ Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, 
 	};
 
 	vkUpdateDescriptorSets(device->handle(), descriptors.size(), descriptors.data(), 0, nullptr);
-	return new Material(device, shader, descriptorPool, descriptorSet);
+	return new Material(device, shader, descriptorPool, descriptorSet[0]);
 }

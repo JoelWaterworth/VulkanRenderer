@@ -3,10 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "../windowHandler.h"
 #include "util.h"
 #include <vulkan/vulkan.h>
-#include "resources/uniformBuffer.h"
 
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
 PFN_vkDestroyDebugReportCallbackEXT		DestroyDebugReportCallbackEXT = VK_NULL_HANDLE;
@@ -79,12 +79,15 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	printf("load mesh complete\n");
 	//_monkey->setBufferName(_device, "monkey");
-	std::vector<ShaderLayout> deferredLayout(1);
-	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
+	std::vector<ShaderLayout> deferredLayout(2);
+	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
+	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
+	
 	std::vector<ShaderLayout> presentLayout(3);
 	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
 	presentLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
 	presentLayout[2] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0);
+
 	printf("Create Shader\n");
 	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
@@ -93,7 +96,9 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 		{ DeferredRenderTarget->getAttachments()[1], 1, },
 		{ DeferredRenderTarget->getAttachments()[2], 2, },
 	};
-	std::vector<UniformBinding> _deferredUniforms = { { _texture, 0 } };
+	glm::mat4 myMatrix = glm::translate(glm::mat4(), glm::vec3(0.5f, 0.0f, 0.0f));
+	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
+	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0}, { _texture, 1 } };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
@@ -108,6 +113,7 @@ Renderer::~Renderer() {
 	vkDeviceWaitIdle(_device->handle());
 	_texture->destroy(_device);
 	delete _texture;
+	delete _cameraSpace;
 	delete _presentShader;
 	delete _deferredShader;
 	_monkey->destroy(_device);

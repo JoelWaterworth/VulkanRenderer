@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <vulkan/vk_sdk_platform.h>
 
 #include "device.h"
@@ -11,6 +11,7 @@
 #include "resources/material.h"
 #include "resources/texture.h"
 #include "resources/resource.h"
+#include "resources/uniformBuffer.h"
 
 #define FRAME_LAG 3
 #ifndef VULKAN_HPP_NO_EXCEPTIONS
@@ -69,6 +70,7 @@ private:
 	Material* _presentMaterial = nullptr;
 	Material* _deferredMaterial = nullptr;
 	UniformInterface* _unfirom = nullptr;
+	UniformBuffer* _cameraSpace = nullptr;
 	VkInstance instance = nullptr;
 	Device* _device = nullptr;
 	SurfaceCapabilities capabilities;

@@ -25,10 +25,10 @@ VkDescriptorBufferInfo* UniformBuffer::getBufferInfo()
 {
 	return &_descriptor;
 }
-/*
+
 UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t size, const void* data)
 {
-	std::pair<VkBuffer, VkDeviceMemory> bufferMemory = device->allocateBuffer(size, VkBufferUsageFlagBits::eUniformBuffer, VkMemoryPropertyFlagBits::eHostVisible);
+	std::pair<VkBuffer, VkDeviceMemory> bufferMemory = device->allocateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	VkBuffer buffer = bufferMemory.first;
 	VkDeviceMemory memory = bufferMemory.second;
 
@@ -41,4 +41,4 @@ UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t s
 	descriptorInfo.offset = 0;
 	descriptorInfo.range = VK_WHOLE_SIZE;
 	return new UniformBuffer(device, descriptorInfo, memory, buffer);
-}*/
+}
