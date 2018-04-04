@@ -34,12 +34,12 @@ class WindowHandle;
 class Renderer
 {
 public:
-	Renderer(std::string title, WindowHandle* window);
+	Renderer(std::string title, WindowHandle* window, bool bwValidation, bool bwDebugReport);
 	~Renderer();
 
 	void Run();
 private:
-	void initInstance(std::string title);
+	void initInstance(std::string title, bool bwValidation, bool bwDebugReport);
 	void initDebug();
 	void initDevice();
 	void GetCapabilities();

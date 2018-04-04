@@ -1,7 +1,6 @@
 #pragma once
 #include "resource.h"
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 #include "../shader.h"
 #include "../uniformInterface.h"
 

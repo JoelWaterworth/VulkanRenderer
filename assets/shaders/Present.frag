@@ -18,7 +18,7 @@ struct Light {
 };
 
 layout (binding = 3) uniform UBO {
-	Light light;
+	Light light[1];
     vec3 viewPos;
 } ubo;
 
@@ -33,10 +33,10 @@ void main() {
 
 	// Ambient part
 	vec3 fragcolor  = albedo.rgb * ambient;
-	//for(int i = 0; i < lightCount; ++i)
-	//{
+	for(int i = 0; i < lightCount; ++i)
+	{
 		// Vector to light
-		vec3 L = ubo.light.position.xyz - fragPos;
+		vec3 L = ubo.light[i].position.xyz - fragPos;
 		// Distance from light to fragment position
 		float dist = length(L);
 
@@ -44,28 +44,28 @@ void main() {
 		vec3 V = ubo.viewPos.xyz - fragPos;
 		V = normalize(V);
 
-		//if(dist < ubo.lights.radius)
+		//if(dist < ubo.lights[i].radius)
 		{
 			// Light to fragment
 			L = normalize(L);
 
 			// Attenuation
-			float atten = ubo.light.radius / (pow(dist, 2.0) + 1.0);
+			float atten = ubo.light[i].radius / (pow(dist, 2.0) + 1.0);
 
 			// Diffuse part
 			vec3 N = normalize(normal);
 			float NdotL = max(0.0, dot(N, L));
-			vec3 diff = ubo.light.color * albedo.rgb * NdotL * atten;
+			vec3 diff = ubo.light[i].color * albedo.rgb * NdotL * atten;
 
 			// Specular part
 			// Specular map values are stored in alpha of albedo mrt
 			vec3 R = reflect(-L, N);
 			float NdotR = max(0.0, dot(R, V));
-			vec3 spec = ubo.light.color * albedo.a * pow(NdotR, 16.0) * atten;
+			vec3 spec = ubo.light[i].color * albedo.a * pow(NdotR, 16.0) * atten;
 
 			fragcolor += diff + spec;
 		}
-	//}
+	}
 
   uFragColor = vec4(fragcolor, 1.0);
 }

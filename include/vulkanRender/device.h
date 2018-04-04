@@ -1,7 +1,9 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "resources/resource.h"
+#include <vector>
 #include "glm/glm.hpp"
+#include <tuple>
 
 using namespace std;
 
@@ -56,8 +58,8 @@ private:
 	vector<Block> allocations;
 	uint64_t blockSize = 512;
 
-	PFN_vkDebugMarkerSetObjectTagEXT     debugMarkerSetObjectTag = VK_NULL_HANDLE;
-	PFN_vkDebugMarkerSetObjectNameEXT	 debugMarkerSetObjectName = VK_NULL_HANDLE;
+	PFN_vkDebugMarkerSetObjectTagEXT     vkDebugMarkerSetObjectTag = VK_NULL_HANDLE;
+	PFN_vkDebugMarkerSetObjectNameEXT	 vkDebugMarkerSetObjectName = VK_NULL_HANDLE;
 	PFN_vkCmdDebugMarkerBeginEXT		 cmdDebugMarkerBegin = VK_NULL_HANDLE;
 	PFN_vkCmdDebugMarkerEndEXT			 cmdDebugMarkerEnd = VK_NULL_HANDLE;
 	PFN_vkCmdDebugMarkerInsertEXT		 cmdDebugMarkerInsert = VK_NULL_HANDLE;

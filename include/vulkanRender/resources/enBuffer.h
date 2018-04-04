@@ -1,6 +1,6 @@
 #pragma once
 #include "resource.h"
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include "../device.h"
 
 class EnBuffer :

@@ -1,6 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 #include "../device.h"
 #include "enBuffer.h"
 #include "resource.h"

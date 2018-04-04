@@ -131,13 +131,12 @@ void Device::setUpmarkers()
 	}
 	
 	if (debugExtensionPresent) {
-		debugMarkerSetObjectTag		= reinterpret_cast<PFN_vkDebugMarkerSetObjectTagEXT>(vkGetDeviceProcAddr(_d, "vkDebugMarkerSetObjectTagEXT"));
-		debugMarkerSetObjectName	= reinterpret_cast<PFN_vkDebugMarkerSetObjectNameEXT>(vkGetDeviceProcAddr(_d, "vkDebugMarkerSetObjectNameEXT"));
-		cmdDebugMarkerBegin			= reinterpret_cast<PFN_vkCmdDebugMarkerBeginEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerBeginEXT"));
-		cmdDebugMarkerEnd			= reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerEndEXT"));
-		cmdDebugMarkerInsert		= reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerInsertEXT"));
-		debugMarkerActive = (debugMarkerSetObjectName != VK_NULL_HANDLE);
-		debugMarkerActive = false;
+		vkDebugMarkerSetObjectTag	= (PFN_vkDebugMarkerSetObjectTagEXT)vkGetDeviceProcAddr(_d, "vkDebugMarkerSetObjectTagEXT");
+		vkDebugMarkerSetObjectName	= (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(_d, "vkDebugMarkerSetObjectNameEXT");
+		cmdDebugMarkerBegin			= (PFN_vkCmdDebugMarkerBeginEXT)vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerBeginEXT");
+		cmdDebugMarkerEnd			= (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerEndEXT");
+		cmdDebugMarkerInsert		= (PFN_vkCmdDebugMarkerInsertEXT)vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerInsertEXT");
+		debugMarkerActive = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}
@@ -155,7 +154,7 @@ void Device::setObjectName(uint64_t object, VkDebugReportObjectTypeEXT objectTyp
 		info.objectType = objectType;
 		info.pObjectName = name;
 		info.object = object;
-		debugMarkerSetObjectName(_d, &info);
+		vkDebugMarkerSetObjectName(_d, &info);
 		std::cout << name << std::endl;
 	}
 }

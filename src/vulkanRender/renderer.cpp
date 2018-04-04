@@ -15,7 +15,7 @@ struct Light {
 };
 
 struct UBO {
-	Light light;
+	Light light[1];
 	glm::vec3 viewPos;
 };
 
@@ -63,8 +63,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 	return false;
 }
 
-Renderer::Renderer(std::string title, WindowHandle* window) {
-	initInstance(title);
+Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, bool bwDebugReport) {
+	initInstance(title, bwValidation, bwDebugReport);
 	printf("initInstance\n");
 	surface = window->createSurface(instance);
 	printf("createSurface\n");
@@ -91,7 +91,7 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	printf("load mesh complete\n");
-	//_monkey->setBufferName(_device, "monkey");
+	_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout(2);
 	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
 	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
@@ -109,10 +109,10 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 
 	UBO lights = {};
 	lights.viewPos = glm::vec3(0.0f, 0.0f, -2.0f);
-	lights.light.radius = 10.0f;
-	lights.light.color = glm::vec3(1.0f, 0.0f, 0.0f);
-	lights.light.position = glm::vec4(2.0f, 0.0f, 0.0f, 1.0f);
-	//lights.lights = { glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f,0.0f,0.0f), 10.0f };
+	lights.light[0].radius = 10.0f;
+	lights.light[0].color = glm::vec3(1.0f, 0.0f, 0.0f);
+	lights.light[0].position = glm::vec4(2.0f, 0.0f, 0.0f, 1.0f);
+	
 	printf("Create _lights\n");
 	_lights = UniformBuffer::CreateUniformBuffer(_device, lights);
 
@@ -231,7 +231,7 @@ void Renderer::Run() {
 	}
 }
 
-void Renderer::initInstance(std::string title) {
+void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugReport) {
 	std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
 	std::vector<const char*> layer;
 
@@ -240,12 +240,18 @@ void Renderer::initInstance(std::string title) {
 #else
     instanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
+	if (bwDebugReport) {
+		instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	}
 
-	instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	layer.push_back("VK_LAYER_LUNARG_standard_validation");
-	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-	dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)vulkanDebugCallback;
-	dbgCreateInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
+	if (bwValidation) {
+		layer.push_back("VK_LAYER_LUNARG_standard_validation");
+	}
+	if (bwValidation || bwDebugReport) {
+		dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+		dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)vulkanDebugCallback;
+		dbgCreateInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
+	}
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -253,7 +259,7 @@ void Renderer::initInstance(std::string title) {
 	appInfo.pEngineName = title.c_str();
 	appInfo.engineVersion = 0;
 	appInfo.applicationVersion = 0;
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 70,);
 
 	VkInstanceCreateInfo instInfo = {};
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

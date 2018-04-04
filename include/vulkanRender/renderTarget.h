@@ -1,6 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 #include <vector>
 #include <utility>
 #include "device.h"

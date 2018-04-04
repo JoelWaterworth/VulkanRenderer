@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 
 #define VK_CHECK_RESULT(f)																				\
 {																										\

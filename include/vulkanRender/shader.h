@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
-#include <vulkan/vk_sdk_platform.h>
+#include <vulkan/vulkan.h>
 #include <experimental/filesystem>
 
 #include "device.h"
@@ -52,9 +51,9 @@ public:
 private:
 	uint8_t _descriptorCount;
 	Device* _device;
-	VkPipeline _pipeline;
-	VkPipelineLayout _pipelineLayout;
-	VkPipelineCache _pipelineCache;
+	VkPipeline _pipeline = VK_NULL_HANDLE;
+	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
+	VkPipelineCache _pipelineCache = VK_NULL_HANDLE;
 	vector<VkDescriptorType> _types;
 
 	static pair<char *, size_t> compile(path shader);

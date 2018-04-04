@@ -230,15 +230,13 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	VkPipelineLayout pipelineLayout;
 	VK_CHECK_RESULT(vkCreatePipelineLayout(device->handle(), &layoutCreateInfo, nullptr, &pipelineLayout));
 
-	VkPipelineCache pipelineCache;
+	VkPipelineCache pipelineCache = VK_NULL_HANDLE;
 
-	VkPipelineCacheCreateInfo pipelineCacheInfo;
+	VkPipelineCacheCreateInfo pipelineCacheInfo = {};
 	pipelineCacheInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-	pipelineCacheInfo.flags = 0;
-	pipelineCacheInfo.initialDataSize = 0;
 
-	//printf("pre vkCreatePipelineCache\n");
-	//VK_CHECK_RESULT(vkCreatePipelineCache(device->handle(), &pipelineCacheInfo, nullptr, &pipelineCache));
+	printf("pre vkCreatePipelineCache\n");
+	VK_CHECK_RESULT(vkCreatePipelineCache(device->handle(), &pipelineCacheInfo, nullptr, &pipelineCache));
 
 	VkGraphicsPipelineCreateInfo graphicPipelineInfo = {};
 	graphicPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -257,7 +255,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 
 	printf("pre create Pipeline\n");
 	VkPipeline pipline;
-	VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->handle(), nullptr, 1, &graphicPipelineInfo, nullptr, &pipline));
+	VK_CHECK_RESULT(vkCreateGraphicsPipelines(device->handle(), pipelineCache, 1, &graphicPipelineInfo, nullptr, &pipline));
 
 	vkDestroyShaderModule(device->handle(), vertRes.first, nullptr);
 	vkDestroyShaderModule(device->handle(), fragRes.first, nullptr);
@@ -265,7 +263,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	shader->_device = device;
 	shader->_pipeline = pipline;
 	shader->_pipelineLayout = pipelineLayout;
-//	shader->_pipelineCache = pipelineCache;
+	shader->_pipelineCache = pipelineCache;
 	shader->_desSetLayouts = descLayouts;
 	shader->_types = types;
 	shader->_descriptorCount = descriptorCount;
