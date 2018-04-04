@@ -181,30 +181,49 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	dynamicStateInfo.pDynamicStates = dynamicState;
 
 	std::vector<VkDescriptorType> types(layouts.size());
-	std::vector<VkDescriptorSetLayoutBinding> layoutBinding(layouts.size());
 	uint8_t descriptorCount = 0;
+	std::vector<std::vector<ShaderLayout>> layout2D;
 	for (int i = 0; i < layouts.size(); i++) {
-		layoutBinding[i].binding = layouts[i].binding;
-		layoutBinding[i].descriptorType = layouts[i].type;
-		layoutBinding[i].descriptorCount = 1;
-		layoutBinding[i].stageFlags = layouts[i].stage;
+		if (layout2D.size() <= layouts[i].set) {
+			layout2D.push_back(std::vector<ShaderLayout>());
+		}
+		layout2D[layouts[i].set].push_back(layouts[i]);
+		descriptorCount = (descriptorCount <= layouts[i].set) ? (layouts[i].set + 1) : descriptorCount;
+	}
+	std::vector<std::vector<VkDescriptorSetLayoutBinding>> layoutBindings;
+
+	for (int i = 0; i < layouts.size(); i++) {
+		uint8_t s = layouts[i].set;
+		if (layoutBindings.size() <= s) {
+			layoutBindings.push_back(std::vector<VkDescriptorSetLayoutBinding>());
+		}
+		VkDescriptorSetLayoutBinding layoutBinding = {};
+		layoutBinding.binding = layouts[i].binding;
+		layoutBinding.descriptorType = layouts[i].type;
+		layoutBinding.descriptorCount = 1;
+		layoutBinding.stageFlags = layouts[i].stage;
+		layoutBindings[s].push_back(layoutBinding);
 		types[i] = layouts[i].type;
 
 		descriptorCount = (descriptorCount < (layouts[i].set + 1)) ? (layouts[i].set + 1) : descriptorCount;
 	}
 
-	VkDescriptorSetLayoutCreateInfo descriptorLayout = {};
-	descriptorLayout.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	descriptorLayout.bindingCount = layoutBinding.size();
-	descriptorLayout.pBindings = layoutBinding.data();
+	std::vector<VkDescriptorSetLayoutCreateInfo> descriptorLayouts(layoutBindings.size());
+	for (int i = 0; i < layoutBindings.size(); i++) {
+		descriptorLayouts[i].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorLayouts[i].bindingCount = layoutBindings[i].size();
+		descriptorLayouts[i].pBindings = layoutBindings[i].data();
+	}
 
-	VkDescriptorSetLayout descLayouts;
-	VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device->handle(), &descriptorLayout, nullptr, &descLayouts));
+	std::vector<VkDescriptorSetLayout> descLayouts(layoutBindings.size());
+	for (int i = 0; i < layoutBindings.size(); i++) {
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device->handle(), &descriptorLayouts[i], nullptr, &descLayouts[i]));
+	}
 
 	VkPipelineLayoutCreateInfo layoutCreateInfo = {};
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.setLayoutCount = 1;
-	layoutCreateInfo.pSetLayouts = &descLayouts;
+	layoutCreateInfo.setLayoutCount = descriptorCount;
+	layoutCreateInfo.pSetLayouts = descLayouts.data();
 
 	VkPipelineLayout pipelineLayout;
 	VK_CHECK_RESULT(vkCreatePipelineLayout(device->handle(), &layoutCreateInfo, nullptr, &pipelineLayout));
@@ -242,7 +261,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	shader->_pipeline = pipline;
 	shader->_pipelineLayout = pipelineLayout;
 	shader->_pipelineCache = pipelineCache;
-	shader->_desSetLayout = descLayouts;
+	shader->_desSetLayouts = descLayouts;
 	shader->_types = types;
 	shader->_descriptorCount = descriptorCount;
 	return shader;
@@ -257,7 +276,7 @@ Shader::~Shader()
 	vkDestroyPipeline(_device->handle(), _pipeline, nullptr);
 	vkDestroyPipelineCache(_device->handle(), _pipelineCache, nullptr);
 	vkDestroyPipelineLayout(_device->handle(), _pipelineLayout, nullptr);
-	//for (auto& des : _desSetLayout) {
-		vkDestroyDescriptorSetLayout(_device->handle(), _desSetLayout, nullptr);
-	//}
+	for (auto& des : _desSetLayouts) {
+		vkDestroyDescriptorSetLayout(_device->handle(), des, nullptr);
+	}
 }

@@ -81,7 +81,7 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	//_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout(2);
 	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
-	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
+	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 	
 	std::vector<ShaderLayout> presentLayout(3);
 	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
@@ -98,7 +98,7 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	};
 	glm::mat4 myMatrix = glm::translate(glm::mat4(), glm::vec3(0.5f, 0.0f, 0.0f));
 	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
-	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0, 0}, { _texture, 1, 0} };
+	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0, 0}, { _texture, 1, 1} };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");

@@ -25,7 +25,7 @@ Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, 
 
 	VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
 	descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	descriptorPoolInfo.maxSets = 1;
+	descriptorPoolInfo.maxSets = 5;
 	descriptorPoolInfo.poolSizeCount = pool.size();
 	descriptorPoolInfo.pPoolSizes = pool.data();
 
@@ -34,9 +34,9 @@ Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, 
 
 	VkDescriptorSetAllocateInfo allocInfo = {};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	allocInfo.descriptorSetCount = 1;
+	allocInfo.descriptorSetCount = shader->getDescriptorCount();
 	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.pSetLayouts = &shader->_desSetLayout;
+	allocInfo.pSetLayouts = shader->_desSetLayouts.data();
 
 	vector<VkDescriptorSet> descriptorSet(shader->getDescriptorCount());
 

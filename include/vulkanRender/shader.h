@@ -41,13 +41,13 @@ public:
 	Shader();
 	~Shader();
 
-	VkDescriptorSetLayout _desSetLayout;
+	vector<VkDescriptorSetLayout> _desSetLayouts;
 
 	inline uint8_t getDescriptorCount() const { return _descriptorCount; }
 	inline VkPipeline GetPipeline() const { return _pipeline; }
 	inline VkPipelineLayout GetPipelineLayout() const { return _pipelineLayout; }
 	inline vector<VkDescriptorType> getTypes() const { return _types; }
-	inline VkDescriptorSetLayout getDesSetLayout() const { return _desSetLayout; }
+	inline vector<VkDescriptorSetLayout> getDesSetLayout() const { return _desSetLayouts; }
 
 private:
 	uint8_t _descriptorCount;
