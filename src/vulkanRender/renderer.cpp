@@ -72,8 +72,10 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 		{ capabilities.format.format,		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1 },
 		{ VK_FORMAT_D16_UNORM,			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1 } };
 
-	PresentRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, PresentAttachmentInfo, 2, &swapchain.view);
-	DeferredRenderTarget = RenderTarget::Create(_device, capabilities.capabilities.maxImageExtent, defferedAttachmentInfo, 4);
+	VkExtent2D resolution = capabilities.capabilities.maxImageExtent;
+
+	PresentRenderTarget = RenderTarget::Create(_device, resolution, PresentAttachmentInfo, 2, &swapchain.view);
+	DeferredRenderTarget = RenderTarget::Create(_device, resolution, defferedAttachmentInfo, 4);
 	_texture = Texture::Create(_device, path("assets/textures/MarbleGreen_COLOR.tga"));
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
@@ -96,7 +98,10 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 		{ DeferredRenderTarget->getAttachments()[1], 1, 0},
 		{ DeferredRenderTarget->getAttachments()[2], 2, 0},
 	};
-	glm::mat4 myMatrix = glm::translate(glm::mat4(), glm::vec3(0.5f, 0.0f, 0.0f));
+	glm::mat4 matPerspec = glm::perspective(glm::radians(90.0f), (float)resolution.width / (float)resolution.height, 0.1f, 100.0f);
+	glm::mat4 matTran = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
+	glm::mat4 matRot = glm::rotate(glm::mat4(), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
+	glm::mat4 myMatrix = matPerspec * matTran;
 	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
 	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0, 0}, { _texture, 1, 1} };
 	printf("Create _presentMaterial\n");
