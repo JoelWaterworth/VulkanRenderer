@@ -8,6 +8,17 @@
 #include "util.h"
 #include <vulkan/vulkan.h>
 
+struct Light {
+	glm::vec4 position;
+	glm::vec3 color;
+	float radius;
+};
+
+struct UBO {
+	Light light;
+	glm::vec3 viewPos;
+};
+
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
 PFN_vkDestroyDebugReportCallbackEXT		DestroyDebugReportCallbackEXT = VK_NULL_HANDLE;
 
@@ -82,27 +93,43 @@ Renderer::Renderer(std::string title, WindowHandle* window) {
 	printf("load mesh complete\n");
 	//_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout(2);
-	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
+	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
 	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1);
 	
-	std::vector<ShaderLayout> presentLayout(3);
-	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
-	presentLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
-	presentLayout[2] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0);
+	std::vector<ShaderLayout> presentLayout(4);
+	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
+	presentLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0);
+	presentLayout[2] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0);
+	presentLayout[3] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_FRAGMENT_BIT, 3, 0);
 
 	printf("Create Shader\n");
 	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
+	printf("Create _deferredShader\n");
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
+
+	UBO lights = {};
+	lights.viewPos = glm::vec3(0.0f, 0.0f, -2.0f);
+	lights.light.radius = 10.0f;
+	lights.light.color = glm::vec3(1.0f, 0.0f, 0.0f);
+	lights.light.position = glm::vec4(2.0f, 0.0f, 0.0f, 1.0f);
+	//lights.lights = { glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(1.0f,0.0f,0.0f), 10.0f };
+	printf("Create _lights\n");
+	_lights = UniformBuffer::CreateUniformBuffer(_device, lights);
+
 	std::vector<UniformBinding> _presentUniforms = {
 		{ DeferredRenderTarget->getAttachments()[0], 0, 0},
 		{ DeferredRenderTarget->getAttachments()[1], 1, 0},
 		{ DeferredRenderTarget->getAttachments()[2], 2, 0},
+		{ _lights, 3, 0}
 	};
+
 	glm::mat4 matPerspec = glm::perspective(glm::radians(90.0f), (float)resolution.width / (float)resolution.height, 0.1f, 100.0f);
 	glm::mat4 matTran = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
 	glm::mat4 matRot = glm::rotate(glm::mat4(), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
 	glm::mat4 myMatrix = matPerspec * matTran;
+	printf("Create _cameraSpace\n");
 	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
+
 	std::vector<UniformBinding> _deferredUniforms = { {_cameraSpace,  0, 0}, { _texture, 1, 1} };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
@@ -119,6 +146,7 @@ Renderer::~Renderer() {
 	_texture->destroy(_device);
 	delete _texture;
 	delete _cameraSpace;
+	delete _lights;
 	delete _presentShader;
 	delete _deferredShader;
 	_monkey->destroy(_device);

@@ -137,6 +137,7 @@ void Device::setUpmarkers()
 		cmdDebugMarkerEnd			= reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerEndEXT"));
 		cmdDebugMarkerInsert		= reinterpret_cast<PFN_vkCmdDebugMarkerInsertEXT>(vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerInsertEXT"));
 		debugMarkerActive = (debugMarkerSetObjectName != VK_NULL_HANDLE);
+		debugMarkerActive = false;
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}

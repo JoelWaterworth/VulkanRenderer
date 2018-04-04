@@ -13,7 +13,7 @@ layout (location = 1) out vec4 uFragPosition;
 layout (location = 2) out vec3 uFragNormal;
 
 void main() {
-	uFragColor = texture(dTexture, i_uv);
+	uFragColor = vec4(texture(dTexture, i_uv).rgb, 1.0);
 	uFragPosition = i_pos;
 	uFragNormal = i_nor;
 }
