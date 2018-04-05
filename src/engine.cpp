@@ -6,6 +6,10 @@
 Engine::Engine()
 {
 	window = new WindowHandle(500, 500, std::string("vulkan renderer"), this);
+#ifdef ALLOWINJECT
+
+
+
 	std::string name;
 	std::getline(std::cin, name);
 
@@ -21,8 +25,8 @@ Engine::Engine()
 #ifdef _DEBUG
 	validation = debug ? false : true;
 #endif // _DEBUG
-
-
+	renderer = new Renderer(std::string("vulkan renderer"), window, validation, debug);
+#endif // ALLOWINJECT
 	renderer = new Renderer(std::string("vulkan renderer"), window, true, true);
 	while (window->Update()) {
 		renderer->Run();

@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <sstream>
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "../windowHandler.h"
@@ -17,6 +18,18 @@ struct Light {
 struct UBO {
 	Light light[1];
 	glm::vec3 viewPos;
+};
+
+struct World {
+	glm::mat4 id;
+	glm::mat4 per;
+	glm::vec4 viewPos;
+	glm::vec4 forward;
+	glm::vec4 upvec;
+	float time;
+	float p1;
+	float p2;
+	float p3;
 };
 
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
@@ -92,10 +105,11 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	printf("load mesh complete\n");
 	_monkey->setBufferName(_device, "monkey");
-	std::vector<ShaderLayout> deferredLayout(3);
-	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
-	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
-	deferredLayout[2] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2);
+	std::vector<ShaderLayout> deferredLayout =
+	{	ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0),
+//		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT, 0, 1),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0)
+	};
 	
 	std::vector<ShaderLayout> presentLayout(4);
 	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
@@ -124,29 +138,36 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		{ _lights, 3, 0}
 	};
 
-	glm::mat4 matPerspec = glm::perspective(glm::radians(90.0f), (float)resolution.width / (float)resolution.height, 0.1f, 100.0f);
-	glm::mat4 matTran = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
-	glm::mat4 matRot = glm::rotate(glm::mat4(), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
-	glm::mat4 matCamera = matPerspec * matTran;
+	World camera = {};
+	camera.id = glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 4.0f));
+	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 10.0f) * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+	camera.viewPos = glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
+	camera.forward = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	camera.upvec = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	camera.time = 0.0f;
+	camera.p1 = 0.0f;
+	camera.p2 = 0.0f;
+	camera.p3 = 0.0f;
+
 	vector<glm::mat4> matPositions(16);
 	for (int x = 0; x < 4; x++) {
 		for (int y = 0; y < 4; y++) {
-			matPositions.push_back(glm::translate(glm::mat4(), glm::vec3(x - 2.0f, y - 2.0f, -2.0f)));
+			matPositions.push_back(glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, 2.0f)));
 		}
 	}
 	printf("Create _cameraSpace\n");
-	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, matCamera);
+	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, camera);
 	_matPostion = UniformDynamicBuffer::Create(_device, matPositions);
 
-	std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
-	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
-	std::vector<UniformBinding> deferredUniforms = {UniformBinding(_texture, 0, 2) };
+//	std::vector<UniformBinding> cameraUniforms = {  };
+//	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
+	std::vector<UniformBinding> deferredUniforms = { UniformBinding(_cameraSpace,  0, 0), UniformBinding(_texture, 1, 0) };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
-	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
-	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
+	//_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
+//	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
+	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 0);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -158,8 +179,8 @@ Renderer::~Renderer() {
 	_texture->destroy(_device);
 	delete _texture;
 	delete _lights;
-	_positions.destroy(_device);
-	_cameraDescriptor.destroy(_device);
+	//_positions.destroy(_device);
+	//_cameraDescriptor.destroy(_device);
 	_presentMaterial.destroy(_device);
 	_deferredMaterial.destroy(_device);
 	delete _presentShader;
@@ -453,6 +474,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
 
 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	_plane->bind(commandBuffer);
 	_plane->draw(commandBuffer);
 	vkCmdEndRenderPass(commandBuffer);
 	_device->endRegion(commandBuffer);
@@ -490,11 +512,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
-
-	for (int i = 0; i < 16; i++) {
-		_positions.makeCurrentAlign(_offscreenDraw, i, _deferredShader);
-	}
+	//_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
 	
 	_deferredMaterial.makeCurrent(_offscreenDraw);
 	VkViewport viewport = {};
@@ -508,7 +526,11 @@ void Renderer::BuildOffscreenCommandBuffer()
 	scissor.extent = resolution;
 
 	vkCmdSetScissor(_offscreenDraw, 0, 1, &scissor);
+	_monkey->bind(_offscreenDraw);
+	//for (int i = 0; i < 16; i++) {
+	//	_positions.makeCurrentAlign(_offscreenDraw, i, _deferredShader);
 	_monkey->draw(_offscreenDraw);
+	//}
 	vkCmdEndRenderPass(_offscreenDraw);
 	_device->endRegion(_offscreenDraw);
 	vkEndCommandBuffer(_offscreenDraw);

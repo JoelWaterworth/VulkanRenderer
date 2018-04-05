@@ -64,7 +64,7 @@ Material Material::CreateMaterialWithShader(Device * device, Shader * shader, ve
 		descriptors[i].dstSet = descriptorSet[uniformBuffers[i].set - setOffset];
 		descriptors[i].dstBinding = uniformBuffers[i].binding;
 		descriptors[i].dstArrayElement = 0;
-		descriptors[i].descriptorCount = 1;
+		descriptors[i].descriptorCount = descriptorCount;
 		descriptors[i].descriptorType = uniformBuffers[i].uniform->getDescriptorType();
 		descriptors[i].pBufferInfo = uniformBuffers[i].uniform->getBufferInfo();
 		descriptors[i].pImageInfo = uniformBuffers[i].uniform->getImageInfo();

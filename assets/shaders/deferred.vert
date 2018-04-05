@@ -12,17 +12,25 @@ layout (location = 1) out vec3 o_nor;
 layout (location = 2) out vec2 o_uv;
 
 layout (binding = 0, set = 0) uniform Camera {
-	mat4 m;
+	mat4 id;
+	mat4 per;
+	vec4 viewPos;
+	vec4 forward;
+	vec4 upvec;
+	float time;
+	float p1;
+	float p2;
+	float p3;
 } camera;
-
+/*
 layout (binding = 0, set = 1) uniform Model {
 	mat4 m;
 } model;
-
+*/
 void main()
 {
-	o_pos = camera.m * model.m * vec4(i_position, 1);
+	o_pos = camera.per * vec4(i_position, 1);
 	o_nor = i_normal;
 	o_uv = i_uv;
-    gl_Position = o_pos;
+    gl_Position = vec4(i_position, 1);
 }

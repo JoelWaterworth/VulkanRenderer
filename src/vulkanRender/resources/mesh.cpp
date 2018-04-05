@@ -80,15 +80,17 @@ Mesh::~Mesh()
 	delete vertexBuffer;
 }
 
-void Mesh::draw(VkCommandBuffer commandBuffer) {
+void Mesh::bind(VkCommandBuffer commandBuffer) {
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer->buffer, &vertexOffset);
 
 	vkCmdBindIndexBuffer(
 		commandBuffer,
-			indexBuffer->buffer,
-			indexOffset,
-			VK_INDEX_TYPE_UINT32);
-	
+		indexBuffer->buffer,
+		indexOffset,
+		VK_INDEX_TYPE_UINT32);
+}
+
+void Mesh::draw(VkCommandBuffer commandBuffer) {
 	vkCmdDrawIndexed(
 		commandBuffer,
 			indexBufferLen,

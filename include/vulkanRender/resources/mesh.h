@@ -25,6 +25,7 @@ public:
 	static Mesh* Create(Device* device, path p);
 	Mesh(Device* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
 	~Mesh();
+	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
 	virtual void destroy(Device* device);
 	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
