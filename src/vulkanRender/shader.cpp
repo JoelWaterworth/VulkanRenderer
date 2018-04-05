@@ -182,7 +182,6 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	dynamicStateInfo.dynamicStateCount = 2;
 	dynamicStateInfo.pDynamicStates = dynamicState;
 
-	std::vector<VkDescriptorType> types(layouts.size());
 	uint8_t descriptorCount = 0;
 	std::vector<std::vector<ShaderLayout>> layout2D;
 	for (int i = 0; i < layouts.size(); i++) {
@@ -205,7 +204,6 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 		layoutBinding.descriptorCount = 1;
 		layoutBinding.stageFlags = layouts[i].stage;
 		layoutBindings[s].push_back(layoutBinding);
-		types[i] = layouts[i].type;
 
 		descriptorCount = (descriptorCount < (layouts[i].set + 1)) ? (layouts[i].set + 1) : descriptorCount;
 	}
@@ -265,7 +263,7 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	shader->_pipelineLayout = pipelineLayout;
 	shader->_pipelineCache = pipelineCache;
 	shader->_desSetLayouts = descLayouts;
-	shader->_types = types;
+	shader->_shaderLayout = layout2D;
 	shader->_descriptorCount = descriptorCount;
 	return shader;
 }

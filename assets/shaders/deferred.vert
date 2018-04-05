@@ -11,7 +11,7 @@ layout (location = 0) out vec4 o_pos;
 layout (location = 1) out vec3 o_nor;
 layout (location = 2) out vec2 o_uv;
 
-layout (binding = 0) uniform Model {
+layout (binding = 0, set = 0) uniform Model {
 	mat4 m;
 } model;
 

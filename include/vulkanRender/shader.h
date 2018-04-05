@@ -30,8 +30,8 @@ struct ShaderLayout {
 		stage(Stage),
 		binding(Binding),
 		set(Set) {};
-
 };
+
 
 class Shader
 {
@@ -45,8 +45,8 @@ public:
 	inline uint8_t getDescriptorCount() const { return _descriptorCount; }
 	inline VkPipeline GetPipeline() const { return _pipeline; }
 	inline VkPipelineLayout GetPipelineLayout() const { return _pipelineLayout; }
-	inline vector<VkDescriptorType> getTypes() const { return _types; }
 	inline vector<VkDescriptorSetLayout> getDesSetLayout() const { return _desSetLayouts; }
+	inline vector<vector<ShaderLayout>> getShaderLayout() const { return _shaderLayout; }
 
 private:
 	uint8_t _descriptorCount;
@@ -54,7 +54,7 @@ private:
 	VkPipeline _pipeline = VK_NULL_HANDLE;
 	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
 	VkPipelineCache _pipelineCache = VK_NULL_HANDLE;
-	vector<VkDescriptorType> _types;
+	vector<vector<ShaderLayout>> _shaderLayout;
 
 	static pair<char *, size_t> compile(path shader);
 	static VkShaderModule createShaderModule(Device* device, const void *code, size_t size);

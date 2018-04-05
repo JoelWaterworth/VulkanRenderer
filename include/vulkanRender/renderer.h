@@ -67,6 +67,7 @@ private:
 	Mesh* _plane = nullptr;
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
+	Material* _cameraDescriptor = nullptr;
 	Material* _presentMaterial = nullptr;
 	Material* _deferredMaterial = nullptr;
 	UniformInterface* _unfirom = nullptr;
