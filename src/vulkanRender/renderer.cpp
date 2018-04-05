@@ -92,9 +92,10 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	_monkey = Mesh::Create(_device, path("assets/Mesh/monkey.dae"));
 	printf("load mesh complete\n");
 	_monkey->setBufferName(_device, "monkey");
-	std::vector<ShaderLayout> deferredLayout(2);
+	std::vector<ShaderLayout> deferredLayout(3);
 	deferredLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0);
-	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1);
+	deferredLayout[1] = ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT, 0, 1);
+	deferredLayout[2] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2);
 	
 	std::vector<ShaderLayout> presentLayout(4);
 	presentLayout[0] = ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0);
@@ -126,17 +127,26 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	glm::mat4 matPerspec = glm::perspective(glm::radians(90.0f), (float)resolution.width / (float)resolution.height, 0.1f, 100.0f);
 	glm::mat4 matTran = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
 	glm::mat4 matRot = glm::rotate(glm::mat4(), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
-	vector<glm::mat4> myMatrix = { matPerspec * matTran };
+	glm::mat4 matCamera = matPerspec * matTran;
+	vector<glm::mat4> matPositions(16);
+	for (int x = 0; x < 4; x++) {
+		for (int y = 0; y < 4; y++) {
+			matPositions.push_back(glm::translate(glm::mat4(), glm::vec3(x - 2.0f, y - 2.0f, -2.0f)));
+		}
+	}
 	printf("Create _cameraSpace\n");
-	_cameraSpace = UniformDynamicBuffer::Create(_device, myMatrix);
+	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, matCamera);
+	_matPostion = UniformDynamicBuffer::Create(_device, matPositions);
 
-	std::vector<UniformBinding> _cameraUniforms = { UniformBinding(&_cameraSpace,  0, 0)};
-	std::vector<UniformBinding> _deferredUniforms = {UniformBinding(_texture, 0, 1) };
+	std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
+	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
+	std::vector<UniformBinding> deferredUniforms = {UniformBinding(_texture, 0, 2) };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, _cameraUniforms, 0, false);
-	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, _deferredUniforms, 1);
+	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
+	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
+	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -148,6 +158,7 @@ Renderer::~Renderer() {
 	_texture->destroy(_device);
 	delete _texture;
 	delete _lights;
+	_positions.destroy(_device);
 	_cameraDescriptor.destroy(_device);
 	_presentMaterial.destroy(_device);
 	_deferredMaterial.destroy(_device);
@@ -242,18 +253,14 @@ void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugRe
 #else
     instanceExtensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #endif
-	if (bwDebugReport) {
-		instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	}
+	
+	instanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	
+	layer.push_back("VK_LAYER_LUNARG_standard_validation");
 
-	if (bwValidation) {
-		layer.push_back("VK_LAYER_LUNARG_standard_validation");
-	}
-	if (bwValidation || bwDebugReport) {
-		dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-		dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)vulkanDebugCallback;
-		dbgCreateInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
-	}
+	dbgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	dbgCreateInfo.pfnCallback = (PFN_vkDebugReportCallbackEXT)vulkanDebugCallback;
+	dbgCreateInfo.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT;
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -261,7 +268,7 @@ void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugRe
 	appInfo.pEngineName = title.c_str();
 	appInfo.engineVersion = 0;
 	appInfo.applicationVersion = 0;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 70,);
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 65,);
 
 	VkInstanceCreateInfo instInfo = {};
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -483,7 +490,12 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor.makeCurrentAlign(_offscreenDraw, 0, _deferredShader);
+	_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
+
+	for (int i = 0; i < 16; i++) {
+		_positions.makeCurrentAlign(_offscreenDraw, i, _deferredShader);
+	}
+	
 	_deferredMaterial.makeCurrent(_offscreenDraw);
 	VkViewport viewport = {};
 	viewport.height = resolution.height;

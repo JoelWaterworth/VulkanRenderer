@@ -13,3 +13,4 @@ CMakeCache.txt
 *.vcxproj
 *.filters
 *.sln
+*.spv

@@ -16,8 +16,8 @@ UniformDynamicBuffer::UniformDynamicBuffer(Device * device, size_t size, uint32_
 {
 	VkDeviceSize uboAlign = device->_deviceProperties.limits.minUniformBufferOffsetAlignment;
 	VkDeviceSize alignment = (size % uboAlign) > 0 ? uboAlign : 0;
-	VkDeviceSize dynamicAlign = (size / uboAlign) * uboAlign + alignment;
-	VkDeviceSize bufferSize = num * dynamicAlign;
+	_align = (size / uboAlign) * uboAlign + alignment;
+	VkDeviceSize bufferSize = num * _align;
 
 	std::pair<VkBuffer, VkDeviceMemory> bufferMemory = device->allocateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 	_buffer = bufferMemory.first;
@@ -26,7 +26,7 @@ UniformDynamicBuffer::UniformDynamicBuffer(Device * device, size_t size, uint32_
 	void* ptr = nullptr;
 	vkMapMemory(device->handle(), _memory, 0, bufferSize, 0, &ptr);
 	for (uint32_t i = 0; i < num; i++) {
-		uint64_t* x = (uint64_t*)ptr + (dynamicAlign * i);
+		uint64_t* x = (uint64_t*)ptr + (_align * i);
 		memcpy(x, data, size);
 	}
 	VkMappedMemoryRange memoryRange = {};

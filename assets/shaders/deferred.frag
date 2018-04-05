@@ -2,7 +2,7 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_ARB_shading_language_420pack : enable
 
-layout (binding = 0, set = 1) uniform sampler2D dTexture;
+layout (binding = 0, set = 2) uniform sampler2D dTexture;
 
 layout (location = 0) in vec4 i_pos;
 layout (location = 1) in vec3 i_nor;

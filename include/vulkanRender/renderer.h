@@ -69,10 +69,12 @@ private:
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
 	Material _cameraDescriptor;
+	Material _positions;
 	Material _presentMaterial;
 	Material _deferredMaterial;
 	UniformInterface* _unfirom = nullptr;
-	UniformDynamicBuffer _cameraSpace;
+	UniformBuffer* _cameraSpace;
+	UniformDynamicBuffer _matPostion;
 	UniformBuffer* _lights = nullptr;
 	VkInstance instance = nullptr;
 	Device* _device = nullptr;

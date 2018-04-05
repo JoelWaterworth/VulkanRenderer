@@ -16,13 +16,14 @@ public:
 
 	virtual VkDescriptorType getDescriptorType();
 	virtual VkDescriptorBufferInfo* getBufferInfo();
+	inline  VkDeviceSize getAlign() { return _align; };
 
 private:
-	VkDescriptorBufferInfo _descriptor;
-	VkDeviceMemory _memory;
-	VkBuffer _buffer;
-
-	Device* _device;
+	VkDescriptorBufferInfo _descriptor = {};
+	VkDeviceMemory _memory = nullptr;
+	VkBuffer _buffer = nullptr;
+	VkDeviceSize _align = 0;
+	Device* _device = nullptr;
 };
 
 template<class T>

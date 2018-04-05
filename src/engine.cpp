@@ -12,18 +12,18 @@ Engine::Engine()
 	bool validation = false, debug = false;
 
 	if (name.find("-v") != std::string::npos) {
-//		validation = true;
+		validation = true;
 	}
 	if ((name.find("-dr") != std::string::npos)) {
 		debug = true;
 	}
 
 #ifdef _DEBUG
-	//validation = debug ? false : true;
+	validation = debug ? false : true;
 #endif // _DEBUG
 
 
-	renderer = new Renderer(std::string("vulkan renderer"), window, validation, debug);
+	renderer = new Renderer(std::string("vulkan renderer"), window, true, true);
 	while (window->Update()) {
 		renderer->Run();
     }
