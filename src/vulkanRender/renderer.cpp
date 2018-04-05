@@ -126,11 +126,11 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	glm::mat4 matPerspec = glm::perspective(glm::radians(90.0f), (float)resolution.width / (float)resolution.height, 0.1f, 100.0f);
 	glm::mat4 matTran = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -2.0f));
 	glm::mat4 matRot = glm::rotate(glm::mat4(), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f));
-	glm::mat4 myMatrix = matPerspec * matTran;
+	vector<glm::mat4> myMatrix = { matPerspec * matTran };
 	printf("Create _cameraSpace\n");
-	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, myMatrix);
+	_cameraSpace = UniformDynamicBuffer::Create(_device, myMatrix);
 
-	std::vector<UniformBinding> _cameraUniforms = { UniformBinding(_cameraSpace,  0, 0)};
+	std::vector<UniformBinding> _cameraUniforms = { UniformBinding(&_cameraSpace,  0, 0)};
 	std::vector<UniformBinding> _deferredUniforms = {UniformBinding(_texture, 0, 1) };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
@@ -147,7 +147,6 @@ Renderer::~Renderer() {
 	vkDeviceWaitIdle(_device->handle());
 	_texture->destroy(_device);
 	delete _texture;
-	delete _cameraSpace;
 	delete _lights;
 	delete _presentShader;
 	delete _deferredShader;
@@ -483,7 +482,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor->makeCurrent(_offscreenDraw, _deferredShader);
+	_cameraDescriptor->makeCurrentAlign(_offscreenDraw, 0, _deferredShader);
 	_deferredMaterial->makeCurrent(_offscreenDraw);
 	VkViewport viewport = {};
 	viewport.height = resolution.height;

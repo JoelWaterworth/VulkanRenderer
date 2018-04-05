@@ -208,7 +208,7 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface)
 	}
 
 	_gpu = physicalDevices[0];
-
+	vkGetPhysicalDeviceProperties(_gpu, &_deviceProperties);
 	vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &queueFamilyCount, NULL);
 	std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &queueFamilyCount, queueFamilyProperties.data());

@@ -12,6 +12,7 @@
 #include "resources/texture.h"
 #include "resources/resource.h"
 #include "resources/uniformBuffer.h"
+#include "resources/UniformDynamicBuffer.h"
 
 #define FRAME_LAG 3
 #ifndef VULKAN_HPP_NO_EXCEPTIONS
@@ -71,7 +72,7 @@ private:
 	Material* _presentMaterial = nullptr;
 	Material* _deferredMaterial = nullptr;
 	UniformInterface* _unfirom = nullptr;
-	UniformBuffer* _cameraSpace = nullptr;
+	UniformDynamicBuffer _cameraSpace;
 	UniformBuffer* _lights = nullptr;
 	VkInstance instance = nullptr;
 	Device* _device = nullptr;

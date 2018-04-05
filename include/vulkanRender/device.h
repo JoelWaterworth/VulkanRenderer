@@ -23,6 +23,7 @@ public:
 	~Device();
 	void deallocateAll();
 	VkPhysicalDeviceMemoryProperties memoryProperties;
+	VkPhysicalDeviceProperties _deviceProperties;
 
 	uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr);
 
