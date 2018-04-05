@@ -148,6 +148,9 @@ Renderer::~Renderer() {
 	_texture->destroy(_device);
 	delete _texture;
 	delete _lights;
+	_cameraDescriptor.destroy(_device);
+	_presentMaterial.destroy(_device);
+	_deferredMaterial.destroy(_device);
 	delete _presentShader;
 	delete _deferredShader;
 	_monkey->destroy(_device);
@@ -156,8 +159,6 @@ Renderer::~Renderer() {
 	delete _plane;
 	delete PresentRenderTarget;
 	delete DeferredRenderTarget;
-	delete _presentMaterial;
-	delete _deferredMaterial;
 	vkWaitForFences(_device->handle(), FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
 	for (int i = 0; i < FRAME_LAG; i++) {
 		vkDestroySemaphore(_device->handle(), _completeRender[i], nullptr);
@@ -432,7 +433,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
 
 	vkCmdBeginRenderPass(commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipeline());
-	_presentMaterial->makeCurrent(commandBuffer);
+	_presentMaterial.makeCurrent(commandBuffer);
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
 	viewport.width = resolution.width;
@@ -482,8 +483,8 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor->makeCurrentAlign(_offscreenDraw, 0, _deferredShader);
-	_deferredMaterial->makeCurrent(_offscreenDraw);
+	_cameraDescriptor.makeCurrentAlign(_offscreenDraw, 0, _deferredShader);
+	_deferredMaterial.makeCurrent(_offscreenDraw);
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
 	viewport.width = resolution.width;

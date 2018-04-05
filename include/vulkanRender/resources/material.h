@@ -18,20 +18,21 @@ struct UniformBinding {
 class Material : public Resource
 {
 public:
-	Material(Device * device, Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align);
+	Material() {};
+	Material(Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align);
 	~Material();
-	static Material* CreateMaterialWithShader(Device * device, Shader* shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset = 0, bool bMakeShaderParent = true, uint32_t align = 0);
+	virtual void destroy(Device* device);
+	static Material CreateMaterialWithShader(Device * device, Shader* shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset = 0, bool bMakeShaderParent = true, uint32_t align = 0);
 	inline vector<VkDescriptorSet>* getDescriptorSets() { return &_descriptorSets; };
 	//shader is only supplied if this material is used for multiple different shaders
 	void makeCurrent(VkCommandBuffer cmd, Shader* shader = nullptr);
 	void makeCurrentAlign(VkCommandBuffer cmd, uint32_t index, Shader* shader = nullptr);
 private:
-	Shader* _shader;
+	Shader* _shader = nullptr;
 	vector<VkDescriptorSetLayout> _descriptorSetLayout;
 	VkDescriptorPool _descriptorPool;
 	vector<VkDescriptorSet> _descriptorSets;
-	Device* _device;
-	uint32_t _firstSet;
-	uint32_t _align;
+	uint32_t _firstSet = 0;
+	uint32_t _align = 0;
 };
 

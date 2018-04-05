@@ -2,9 +2,8 @@
 #include "../util.h"
 #include <iostream>
 
-Material::Material(Device * device, Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align)
+Material::Material(Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align)
 {
-	_device = device;
 	_shader = shader;
 	_descriptorPool = descriptorPool;
 	_descriptorSets = descriptorSets;
@@ -14,10 +13,15 @@ Material::Material(Device * device, Shader * shader, VkDescriptorPool descriptor
 
 Material::~Material()
 {
-	vkDestroyDescriptorPool(_device->handle(), _descriptorPool, nullptr);
+	
 }
 
-Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset, bool bMakeShaderParent, uint32_t align)
+void Material::destroy(Device * device)
+{
+	vkDestroyDescriptorPool(device->handle(), _descriptorPool, nullptr);
+}
+
+Material Material::CreateMaterialWithShader(Device * device, Shader * shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset, bool bMakeShaderParent, uint32_t align)
 {
 	uint32_t lastSet = 0;
 	std::vector<VkDescriptorPoolSize> pool;
@@ -68,7 +72,7 @@ Material * Material::CreateMaterialWithShader(Device * device, Shader * shader, 
 	};
 
 	vkUpdateDescriptorSets(device->handle(), descriptors.size(), descriptors.data(), 0, nullptr);
-	return new Material(device, bMakeShaderParent ? shader : nullptr, descriptorPool, descriptorSet, setOffset, align);
+	return Material(bMakeShaderParent ? shader : nullptr, descriptorPool, descriptorSet, setOffset, align);
 }
 
 void Material::makeCurrent(VkCommandBuffer cmd, Shader* shader) {
