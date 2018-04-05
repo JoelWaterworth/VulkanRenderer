@@ -108,7 +108,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	std::vector<ShaderLayout> deferredLayout =
 	{	ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT, 0, 0),
 //		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT, 0, 1),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0)
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1)
 	};
 	
 	std::vector<ShaderLayout> presentLayout(4);
@@ -140,7 +140,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	World camera = {};
 	camera.id = glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 4.0f));
-	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 10.0f) * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 10.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
 	camera.viewPos = glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
 	camera.forward = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	camera.upvec = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
@@ -159,15 +159,15 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, camera);
 	_matPostion = UniformDynamicBuffer::Create(_device, matPositions);
 
-//	std::vector<UniformBinding> cameraUniforms = {  };
+	std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
 //	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
-	std::vector<UniformBinding> deferredUniforms = { UniformBinding(_cameraSpace,  0, 0), UniformBinding(_texture, 1, 0) };
+	std::vector<UniformBinding> deferredUniforms = { UniformBinding(_texture, 0, 1) };
 	printf("Create _presentMaterial\n");
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	//_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
+	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
 //	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
-	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 0);
+	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 1);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -512,7 +512,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	//_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
+	_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
 	
 	_deferredMaterial.makeCurrent(_offscreenDraw);
 	VkViewport viewport = {};

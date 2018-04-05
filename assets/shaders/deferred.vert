@@ -29,8 +29,8 @@ layout (binding = 0, set = 1) uniform Model {
 */
 void main()
 {
-	o_pos = camera.per * vec4(i_position, 1);
+	o_pos = vec4(i_position, 1);
 	o_nor = i_normal;
 	o_uv = i_uv;
-    gl_Position = vec4(i_position, 1);
+    gl_Position = camera.per * vec4(i_position, 1);
 }
