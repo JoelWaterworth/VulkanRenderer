@@ -20,9 +20,12 @@ struct UBO {
 	glm::vec3 viewPos;
 };
 
-struct Model {
-	glm::mat4 id;
+struct Camera {
 	glm::mat4 per;
+};
+
+
+struct Model {
 	glm::mat4 transform;
 	glm::mat4 inverse;
 };
@@ -101,9 +104,9 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	printf("load mesh complete\n");
 	_monkey->setBufferName(_device, "monkey");
 	std::vector<ShaderLayout> deferredLayout =
-	{	//ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT,		0, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT,		0, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,	0, 1)
+	{	ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT,		0, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT,		0, 1),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,	0, 2)
 	};
 	
 	std::vector<ShaderLayout> presentLayout(4);
@@ -117,24 +120,25 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	printf("Create _deferredShader\n");
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 
+	Camera camera = {};
+	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
+
 	vector<Model> models;
 	for (int x = 0; x < 4; x++) {
 		for (int y = 0; y < 4; y++) {
 			Model m = {};
-			m.id = glm::translate(glm::mat4(1.0f), glm::vec3(5.0f, 1.0f, 4.0f));
-			m.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
 			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3(x - 2.0f, y - 2.0f, -5.0f));
 			m.inverse = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f));
 			models.push_back(m);
 		}
 	}
 	printf("Create _cameraSpace\n");
-	//_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, camera);
+	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, camera);
 	_matPostion = UniformDynamicBuffer::Create(_device, models);
 
-	//std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
-	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 0)};
-	std::vector<UniformBinding> deferredUniforms = { UniformBinding(_texture, 0, 1) };
+	std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
+	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
+	std::vector<UniformBinding> deferredUniforms = { UniformBinding(_texture, 0, 2) };
 	printf("Create _presentMaterial\n");
 
 	UBO lights = {};
@@ -155,9 +159,9 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	//_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
-	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 0, false, _matPostion.getAlign());
-	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 1);
+	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
+	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
+	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -170,7 +174,7 @@ Renderer::~Renderer() {
 	delete _texture;
 	delete _lights;
 	_positions.destroy(_device);
-	//_cameraDescriptor.destroy(_device);
+	_cameraDescriptor.destroy(_device);
 	_presentMaterial.destroy(_device);
 	_deferredMaterial.destroy(_device);
 	delete _presentShader;
@@ -502,7 +506,7 @@ void Renderer::BuildOffscreenCommandBuffer()
 
 	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	//_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
+	_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
 	
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
