@@ -14,23 +14,14 @@ layout (location = 2) out vec2 o_uv;
 layout (binding = 0, set = 0) uniform Camera {
 	mat4 id;
 	mat4 per;
-	vec4 viewPos;
-	vec4 forward;
-	vec4 upvec;
-	float time;
-	float p1;
-	float p2;
-	float p3;
+	mat4 transform;
+	mat4 inverse;
 } camera;
-/*
-layout (binding = 0, set = 1) uniform Model {
-	mat4 m;
-} model;
-*/
+
 void main()
 {
-	o_pos = vec4(i_position, 1);
+	o_pos = camera.transform * vec4(i_position, 1);
 	o_nor = i_normal;
 	o_uv = i_uv;
-    gl_Position = camera.per * vec4(i_position, 1);
+    gl_Position = camera.per * o_pos;
 }

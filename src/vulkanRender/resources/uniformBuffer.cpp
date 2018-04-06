@@ -39,6 +39,6 @@ UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t s
 	VkDescriptorBufferInfo descriptorInfo = {};
 	descriptorInfo.buffer = buffer;
 	descriptorInfo.offset = 0;
-	descriptorInfo.range = VK_WHOLE_SIZE;
+	descriptorInfo.range = size;
 	return new UniformBuffer(device, descriptorInfo, memory, buffer);
 }
