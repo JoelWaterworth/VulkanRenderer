@@ -8,13 +8,13 @@ World::World() {
 
 World::~World() {
 	for (auto actor : actors) {
-		delete actor;
+		//delete actor;
 	}
 }
 
-void World::update(std::set<char> keys){
+void World::update(std::set<char> keys, double deltaTime){
 	for (auto actor : actors) {
-		actor->receiveInput(keys, deltaTimer);
+		actor->receiveInput(keys, deltaTime);
 	}
 }
 

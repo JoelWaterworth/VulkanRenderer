@@ -64,8 +64,8 @@ WindowHandle::WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, 
 	if (!RegisterClassEx(&wcex))
 	{
 		MessageBox(NULL,
-			_T("Call to RegisterClassEx failed!"),
-			_T("Win32 Guided Tour"),
+			(LPCSTR)L"Call to RegisterClassEx failed!",
+			(LPCSTR)L"Win32 Guided Tour",
 			NULL);
 	}
 	hWnd = CreateWindow(
@@ -83,8 +83,8 @@ WindowHandle::WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, 
 	if (!hWnd)
 	{
 		MessageBox(NULL,
-			_T("Call to CreateWindow failed!"),
-			_T("Win32 Guided Tour"),
+			(LPCSTR)L"Call to CreateWindow failed!",
+			(LPCSTR)L"Win32 Guided Tour",
 			NULL);
 	}
 
@@ -99,7 +99,17 @@ WindowHandle::WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, 
 bool WindowHandle::Update()
 {
 	MSG msg;
+	char kd;
 	if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
+		POINT p;
+		if (GetCursorPos(&p))
+		{
+			
+			mousePos.x = p.x;
+			mousePos.y = p.y;
+//			SetCursorPos(0, 0);
+			//cursor position now in p.x and p.y
+		}
 		switch (msg.message)
 		{
 		case WM_QUIT:
@@ -108,7 +118,8 @@ bool WindowHandle::Update()
 			break;
 
 		case WM_KEYDOWN:
-			activeKeys.insert(MapVirtualKey(msg.wParam, MAPVK_VK_TO_CHAR));
+			kd = MapVirtualKey(msg.wParam, MAPVK_VK_TO_CHAR);
+			activeKeys.insert(kd);
 			break;
 
 		case WM_KEYUP:

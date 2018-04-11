@@ -7,6 +7,7 @@
 #include<X11/Xlib.h>
 #endif
 #include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
 
 #include <set>
 
@@ -32,6 +33,8 @@ public:
 	void Close() { bisOpen = false; };
 
 	VkSurfaceKHR createSurface(VkInstance inst);
+
+	glm::uvec2 mousePos;
 
 	std::set<char> activeKeys;
 

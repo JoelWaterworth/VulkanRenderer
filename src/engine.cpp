@@ -32,10 +32,12 @@ Engine::Engine()
 	world = World();
 	auto camera = PlayerCamera();
 	camera.transform = Transform(glm::vec3(0.0f, 0.0f, -5.0f));
+	world.addActor(&camera);
 	clock_t begin = clock();
 	while (window.Update()) {
 		clock_t end = clock();
 		double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		world.update(window.activeKeys, elapsed_secs);
 		renderer.Run(&world);
     }
 	renderer.destroy();

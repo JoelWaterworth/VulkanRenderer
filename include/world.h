@@ -11,7 +11,7 @@ public:
 
 	double deltaTimer = 0.0;
 
-	void update(std::set<char> keys);
+	void update(std::set<char> keys, double deltaTime);
 
 	void addActor(Actor* actor);
 
