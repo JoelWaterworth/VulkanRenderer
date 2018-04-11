@@ -8,11 +8,22 @@
 #endif
 #include <vulkan/vulkan.h>
 
+#include <set>
+
+enum class KeyInput : uint16_t {
+	Esc,
+	W,
+	A,
+	D,
+	S,
+};
+
 class Engine;
 
 class WindowHandle
 {
 public:
+	WindowHandle();
 	WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine);
 	~WindowHandle();
 
@@ -21,13 +32,15 @@ public:
 	void Close() { bisOpen = false; };
 
 	VkSurfaceKHR createSurface(VkInstance inst);
+
+	std::set<char> activeKeys;
+
 #if defined(_WIN32)
 	HWND get() { return hWnd; }
 
 private:
 	HWND hWnd;
 	HINSTANCE hInstance;
-
 
 	std::string							_win32_class_name;
 	static uint64_t						_win32_class_id_counter;

@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_sdk_platform.h>
-
+#include "world.h"
 #include "device.h"
 #include "renderTarget.h"
 #include <string>
@@ -35,10 +35,12 @@ class WindowHandle;
 class Renderer
 {
 public:
+	Renderer();
 	Renderer(std::string title, WindowHandle* window, bool bwValidation, bool bwDebugReport);
 	~Renderer();
 
-	void Run();
+	void Run(World* world);
+	void destroy();
 private:
 	void initInstance(std::string title, bool bwValidation, bool bwDebugReport);
 	void initDebug();
@@ -47,20 +49,21 @@ private:
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
 	void BuildPresentCommandBuffer(VkCommandBuffer commandBuffer);
-	void BuildOffscreenCommandBuffer();
+	void BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world);
 	bool debugMarkerActive = false;
 	bool prepared = false;
 	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = {};
 	VkDebugReportCallbackEXT			 debugReport = VK_NULL_HANDLE;
 
 	std::vector<VkCommandBuffer> _draw;
-	VkCommandBuffer _offscreenDraw;
+	VkCommandBuffer _offscreenDraw[FRAME_LAG];
 
 	VkSemaphore _completeRender[FRAME_LAG];
-	VkSemaphore _offscreenRender;
+	VkSemaphore _offscreenRender[FRAME_LAG];
 	VkSemaphore _presentComplete[FRAME_LAG];
 
 	VkFence _fences[FRAME_LAG];
+	VkFence _renderFences[FRAME_LAG];
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 	Texture* _texture = nullptr;

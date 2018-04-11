@@ -20,7 +20,7 @@ struct UBO {
 	glm::vec3 viewPos;
 };
 
-struct Camera {
+struct CameraMat {
 	glm::mat4 per;
 };
 
@@ -74,6 +74,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 	return false;
 }
 
+Renderer::Renderer()
+{
+}
+
 Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, bool bwDebugReport) {
 	initInstance(title, bwValidation, bwDebugReport);
 	printf("initInstance\n");
@@ -120,14 +124,15 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	printf("Create _deferredShader\n");
 	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 
-	Camera camera = {};
+	CameraMat camera = {};
 	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
 
+	float spacing = 2.0f;
 	vector<Model> models;
-	for (int x = 0; x < 4; x++) {
-		for (int y = 0; y < 4; y++) {
+	for (int x = 0; x < 5; x++) {
+		for (int y = 0; y < 5; y++) {
 			Model m = {};
-			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3(x - 2.0f, y - 2.0f, -5.0f));
+			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, -5.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 			m.inverse = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f));
 			models.push_back(m);
 		}
@@ -169,40 +174,10 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 }
 
 Renderer::~Renderer() {
-	vkDeviceWaitIdle(_device->handle());
-	_texture->destroy(_device);
-	delete _texture;
-	delete _lights;
-	_positions.destroy(_device);
-	_cameraDescriptor.destroy(_device);
-	_presentMaterial.destroy(_device);
-	_deferredMaterial.destroy(_device);
-	delete _presentShader;
-	delete _deferredShader;
-	_monkey->destroy(_device);
-	delete _monkey;
-	_plane->destroy(_device);
-	delete _plane;
-	delete PresentRenderTarget;
-	delete DeferredRenderTarget;
-	vkWaitForFences(_device->handle(), FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
-	for (int i = 0; i < FRAME_LAG; i++) {
-		vkDestroySemaphore(_device->handle(), _completeRender[i], nullptr);
-		vkDestroySemaphore(_device->handle(), _presentComplete[i], nullptr);
-		vkDestroyFence(_device->handle(), _fences[i], nullptr);
-	}
-	vkDestroySemaphore(_device->handle(), _offscreenRender, nullptr);
-	vkDestroySwapchainKHR(_device->handle(), swapchain.handle, nullptr);
-	for (auto frame : swapchain.view) {
-		vkDestroyImageView(_device->handle(), frame, nullptr);
-	}
-	vkDestroySurfaceKHR(instance, surface, nullptr);
-	_device->deallocateAll();
-	delete _device;
-	vkDestroyInstance(instance, nullptr);
+	
 }
 
-void Renderer::Run() {
+void Renderer::Run(World* world) {
 	if (!prepared) {
 		return;
 	}
@@ -220,7 +195,10 @@ void Renderer::Run() {
 	} else {
 		assert(res == VK_SUCCESS);
 	}
-
+	VK_CHECK_RESULT(vkWaitForFences(_device->handle(), 1, &_renderFences[_frameIndex], VK_TRUE, UINT64_MAX));
+	VK_CHECK_RESULT(vkResetFences(_device->handle(), 1, &_renderFences[_frameIndex]));
+	
+	BuildOffscreenCommandBuffer(_offscreenDraw[_frameIndex], world);
 	VkPipelineStageFlags const pipeStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -228,12 +206,12 @@ void Renderer::Run() {
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = &_presentComplete[_frameIndex];
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &_offscreenDraw;
+	submitInfo.pCommandBuffers = &_offscreenDraw[_frameIndex];
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &_offscreenRender;
+	submitInfo.pSignalSemaphores = &_offscreenRender[_frameIndex];
 	
-	VK_CHECK_RESULT(vkQueueSubmit(_device->getGraphicsQueue(), 1, &submitInfo, VkFence()));
-	submitInfo.pWaitSemaphores = &_offscreenRender;
+	VK_CHECK_RESULT(vkQueueSubmit(_device->getGraphicsQueue(), 1, &submitInfo, _renderFences[_frameIndex]));
+	submitInfo.pWaitSemaphores = &_offscreenRender[_frameIndex];
 	submitInfo.pSignalSemaphores = &_completeRender[_frameIndex];
 	submitInfo.pCommandBuffers = &_draw[_frameIndex];
 
@@ -257,6 +235,42 @@ void Renderer::Run() {
 	} else {
 		assert(res == VK_SUCCESS);
 	}
+}
+
+void Renderer::destroy()
+{
+	vkDeviceWaitIdle(_device->handle());
+	_texture->destroy(_device);
+	delete _texture;
+	delete _lights;
+	_positions.destroy(_device);
+	_cameraDescriptor.destroy(_device);
+	_presentMaterial.destroy(_device);
+	_deferredMaterial.destroy(_device);
+	delete _presentShader;
+	delete _deferredShader;
+	_monkey->destroy(_device);
+	delete _monkey;
+	_plane->destroy(_device);
+	delete _plane;
+	delete PresentRenderTarget;
+	delete DeferredRenderTarget;
+	vkWaitForFences(_device->handle(), FRAME_LAG, _fences, VK_TRUE, UINT64_MAX);
+	for (int i = 0; i < FRAME_LAG; i++) {
+		vkDestroySemaphore(_device->handle(), _completeRender[i], nullptr);
+		vkDestroySemaphore(_device->handle(), _presentComplete[i], nullptr);
+		vkDestroySemaphore(_device->handle(), _offscreenRender[i], nullptr);
+		vkDestroyFence(_device->handle(), _fences[i], nullptr);
+		vkDestroyFence(_device->handle(), _renderFences[i], nullptr);
+	}
+	vkDestroySwapchainKHR(_device->handle(), swapchain.handle, nullptr);
+	for (auto frame : swapchain.view) {
+		vkDestroyImageView(_device->handle(), frame, nullptr);
+	}
+	vkDestroySurfaceKHR(instance, surface, nullptr);
+	_device->deallocateAll();
+	delete _device;
+	vkDestroyInstance(instance, nullptr);
 }
 
 void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugReport) {
@@ -402,28 +416,31 @@ void Renderer::CreateFencesSemaphore() {
 
 	for (uint32_t i = 0; i < FRAME_LAG; i++) {
 		VK_CHECK_RESULT(vkCreateFence(_device->handle(), &fenceInfo, nullptr, &_fences[i]));
+		VK_CHECK_RESULT(vkCreateFence(_device->handle(), &fenceInfo, nullptr, &_renderFences[i]));
 		VK_CHECK_RESULT(vkCreateSemaphore(_device->handle(), &semaphoreCreateInfo, nullptr, &_completeRender[i]));
 		std::string preText = "PresentCommandBuffer ";
 		preText += std::to_string(i);
 		_device->setSemaphoreName(_completeRender[i], preText.c_str());
 		VK_CHECK_RESULT(vkCreateSemaphore(_device->handle(), &semaphoreCreateInfo, nullptr, &_presentComplete[i]));
+		VK_CHECK_RESULT(vkCreateSemaphore(_device->handle(), &semaphoreCreateInfo, nullptr, &_offscreenRender[i]));
 	}
-	VK_CHECK_RESULT(vkCreateSemaphore(_device->handle(), &semaphoreCreateInfo, nullptr, &_offscreenRender));
 
 	VkCommandBufferAllocateInfo cmd = {};
 	cmd.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	cmd.commandPool = _device->_commandPool;
 	cmd.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmd.commandBufferCount = swapchain.view.size() + 1;
+	cmd.commandBufferCount = swapchain.view.size() + FRAME_LAG;
 
-	_draw.resize(swapchain.view.size() + 1);
+	_draw.resize(swapchain.view.size() + FRAME_LAG);
 	vkAllocateCommandBuffers(_device->handle(), &cmd, _draw.data() );
-	_offscreenDraw = _draw[swapchain.view.size()];
-	_draw.pop_back();
+	for (int i = swapchain.view.size() + FRAME_LAG; i > swapchain.view.size(); i--) {
+		_offscreenDraw[i - FRAME_LAG - 1] = _draw[i-1];
+		_draw.pop_back();
+	}
+	
 	for (auto& cmd : _draw) {
 		BuildPresentCommandBuffer(cmd);
 	}
-	BuildOffscreenCommandBuffer();
 }
 
 void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
@@ -477,11 +494,15 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer){
 	currentBuffer = currentBuffer + 1;
 }
 
-void Renderer::BuildOffscreenCommandBuffer()
+void Renderer::BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world)
 {
+	Camera camera = world->getCamera();
+	CameraMat cameraMat = {};
+	cameraMat.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), camera.transform.loction);
+	_cameraSpace->update(_device, &cameraMat);
 	VkCommandBufferBeginInfo commandInfo = {};
 	commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	commandInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+	commandInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
 	auto const resolution = DeferredRenderTarget->getResolution();
 
@@ -499,35 +520,35 @@ void Renderer::BuildOffscreenCommandBuffer()
 	passInfo.clearValueCount = 4;
 	passInfo.pClearValues = clearValues;
 	
-	auto res = vkBeginCommandBuffer(_offscreenDraw, &commandInfo);
+	auto res = vkBeginCommandBuffer(cmd, &commandInfo);
 	assert(res == VK_SUCCESS);
 
-	_device->beginRegion(_offscreenDraw, "OffscreenCommandBuffer", glm::vec4({ 1.0f, 0.0f, 0.0f, 1.0f }));
+	_device->beginRegion(cmd, "OffscreenCommandBuffer", glm::vec4({ 1.0f, 0.0f, 0.0f, 1.0f }));
 
-	vkCmdBeginRenderPass(_offscreenDraw, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(_offscreenDraw, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor.makeCurrent(_offscreenDraw, _deferredShader);
+	vkCmdBeginRenderPass(cmd, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
+	_cameraDescriptor.makeCurrent(cmd, _deferredShader);
 	
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
 	viewport.width = resolution.width;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(_offscreenDraw, 0, 1, &viewport);
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 	VkRect2D scissor = {};
 	scissor.extent = resolution;
 
-	vkCmdSetScissor(_offscreenDraw, 0, 1, &scissor);
-	_monkey->bind(_offscreenDraw);
-	_deferredMaterial.makeCurrent(_offscreenDraw);
-	for (int i = 0; i < 16; i++) {
-		_positions.makeCurrentAlign(_offscreenDraw, i, _deferredShader);
-		_monkey->draw(_offscreenDraw);
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
+	_monkey->bind(cmd);
+	_deferredMaterial.makeCurrent(cmd);
+	for (int i = 0; i < 25; i++) {
+		_positions.makeCurrentAlign(cmd, i, _deferredShader);
+		_monkey->draw(cmd);
 	}
 	
-	vkCmdEndRenderPass(_offscreenDraw);
-	_device->endRegion(_offscreenDraw);
-	vkEndCommandBuffer(_offscreenDraw);
+	vkCmdEndRenderPass(cmd);
+	_device->endRegion(cmd);
+	vkEndCommandBuffer(cmd);
 	assert(res == VK_SUCCESS);
 }

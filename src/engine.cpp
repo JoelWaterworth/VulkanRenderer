@@ -2,10 +2,11 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include "playerCamera.h"
 
 Engine::Engine()
 {
-	window = new WindowHandle(500, 500, std::string("vulkan renderer"), this);
+	window = WindowHandle(500, 500, std::string("vulkan renderer"), this);
 #ifdef ALLOWINJECT
 
 
@@ -25,17 +26,27 @@ Engine::Engine()
 #ifdef _DEBUG
 	validation = debug ? false : true;
 #endif // _DEBUG
-	renderer = new Renderer(std::string("vulkan renderer"), window, validation, debug);
+	renderer = Renderer(std::string("vulkan renderer"), window, validation, debug);
 #endif // ALLOWINJECT
-	renderer = new Renderer(std::string("vulkan renderer"), window, true, true);
-	while (window->Update()) {
-		renderer->Run();
+	renderer = Renderer(std::string("vulkan renderer"), &window, true, true);
+	world = World();
+	auto camera = PlayerCamera();
+	camera.transform = Transform(glm::vec3(0.0f, 0.0f, -5.0f));
+	clock_t begin = clock();
+	while (window.Update()) {
+		clock_t end = clock();
+		double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+		renderer.Run(&world);
     }
+	renderer.destroy();
 }
 
 
 Engine::~Engine()
 {
-	delete renderer;
-	delete window;
+}
+
+void Engine::updateGameState()
+{
+
 }

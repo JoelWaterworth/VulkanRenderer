@@ -21,11 +21,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_CLOSE:
-		engine->window->Close();
+		engine->window.Close();
 		return 0;
 	case WM_DESTROY:
 		PostQuitMessage(0);
-		engine->window->Close();
+		engine->window.Close();
 		break;
 	default:
 		break;
@@ -35,6 +35,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 uint64_t	WindowHandle::_win32_class_id_counter = 0;
+
+WindowHandle::WindowHandle()
+{
+}
 
 WindowHandle::WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine)
 {
@@ -96,6 +100,21 @@ bool WindowHandle::Update()
 {
 	MSG msg;
 	if (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
+		switch (msg.message)
+		{
+		case WM_QUIT:
+			PostQuitMessage(0);
+			Close();
+			break;
+
+		case WM_KEYDOWN:
+			activeKeys.insert(MapVirtualKey(msg.wParam, MAPVK_VK_TO_CHAR));
+			break;
+
+		case WM_KEYUP:
+			activeKeys.erase(MapVirtualKey(msg.wParam, MAPVK_VK_TO_CHAR));
+			break;
+		}
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -112,6 +131,7 @@ VkSurfaceKHR WindowHandle::createSurface(VkInstance inst)
 	VK_CHECK_RESULT(vkCreateWin32SurfaceKHR(inst, &createInfo, NULL, &surface));
 	return surface;
 }
+
 
 #else
 

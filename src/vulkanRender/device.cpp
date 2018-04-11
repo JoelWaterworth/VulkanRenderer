@@ -55,7 +55,7 @@ std::pair<VkBuffer, VkDeviceMemory> Device::allocateBuffer(VkDeviceSize size, Vk
 		req.memoryTypeBits,
 		properties,
 		&allocateInfo.memoryTypeIndex);
-	VkDeviceMemory memory;
+	VkDeviceMemory memory = VK_NULL_HANDLE;
 	VK_CHECK_RESULT(vkAllocateMemory(_d, &allocateInfo, nullptr, &memory));
 	vkBindBufferMemory(_d, buffer, memory, 0);
 	return std::pair<VkBuffer, VkDeviceMemory>(buffer, memory);
@@ -252,6 +252,7 @@ Device::Device(VkInstance instance, VkSurfaceKHR surface)
 	VkCommandPoolCreateInfo cmdPoolInfo = {};
 	cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	cmdPoolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	VK_CHECK_RESULT(vkCreateCommandPool(_d, &cmdPoolInfo, nullptr, &_commandPool));
 	setUpmarkers();
 }

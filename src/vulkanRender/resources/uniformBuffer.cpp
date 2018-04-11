@@ -2,18 +2,27 @@
 
 
 
-UniformBuffer::UniformBuffer(Device * device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer)
+UniformBuffer::UniformBuffer(Device * device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer, VkDeviceSize size)
 {
 	_device = device;
 	_descriptor = descriptor;
 	_memory = memory;
 	_buffer = buffer;
+	_size = size;
 }
 
 UniformBuffer::~UniformBuffer()
 {
 	vkDestroyBuffer(_device->handle(), _buffer, nullptr);
 	vkFreeMemory(_device->handle(), _memory, nullptr);
+}
+
+void UniformBuffer::update(Device * device, const void * data)
+{
+	void* ptr = VK_NULL_HANDLE;
+	vkMapMemory(device->handle(), _memory, 0, _size, 0, &ptr);
+	memcpy(ptr, data, _size);
+	vkUnmapMemory(device->handle(), _memory);
 }
 
 VkDescriptorType UniformBuffer::getDescriptorType()
@@ -40,5 +49,5 @@ UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t s
 	descriptorInfo.buffer = buffer;
 	descriptorInfo.offset = 0;
 	descriptorInfo.range = size;
-	return new UniformBuffer(device, descriptorInfo, memory, buffer);
+	return new UniformBuffer(device, descriptorInfo, memory, buffer, size);
 }
