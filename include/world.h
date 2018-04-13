@@ -3,6 +3,7 @@
 #include "actor.h"
 #include <vector>
 #include <set>
+#include "lightActor.h"
 
 class World {
 public:
@@ -18,4 +19,6 @@ public:
 	std::vector<Actor*> actors = std::vector<Actor*>();
 
 	Camera getCamera();
+
+	std::vector<Light> getLights();
 };

@@ -1,0 +1,33 @@
+[Header]
+ICOfile = "hdrvfx_zanla_1_n1_v01_Thumb.jpg"
+Name = "Living Room"
+Author = "HDR-VFX"
+Location = "Lousiania"
+Comment = "living room, interior, morning, soft light, house"
+
+[Background]
+BGfile = "hdrvfx_zanla_1_n1_v01_Bg.jpg"
+BGmap = 1
+BGu = 0.000000
+BGv = 0.000000
+BGheight = 4000
+
+[Enviroment]
+EVfile = "hdrvfx_zanla_1_n1_v01_Env.hdr"
+EVmap = 1
+EVu = 0.000000
+EVv = 0.000000
+EVheight = 180
+EVmulti = 1.000000
+EVgamma = 2.000000
+
+[Reflection]
+REFfile = "hdrvfx_zanla_1_n1_v01_Ref.hdr"
+REFmap = 1
+REFu = 0.000000
+REFv = 0.000000
+REFheight = 750
+REFmulti = 1.000000
+REFgamma = 2.035088
+
+

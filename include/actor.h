@@ -19,6 +19,7 @@ struct Transform {
 class Actor {
 public:
 	Actor();
+	Actor(Transform tran) : transform(tran) {};
 	~Actor();
 
 	Transform transform;

@@ -33,3 +33,14 @@ Camera World::getCamera()
 	}
 	return Camera();
 }
+
+std::vector<Light> World::getLights() {
+	std::vector<Light> lights;
+	for (auto actor : actors) {
+		LightActor *ptr = dynamic_cast<LightActor*>(actor);
+		if (ptr) {
+			lights.push_back(ptr->getLight());
+		}
+	}
+	return lights;
+}

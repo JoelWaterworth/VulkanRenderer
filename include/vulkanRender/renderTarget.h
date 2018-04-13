@@ -16,6 +16,7 @@ class RenderTarget
 {
 public:
 	RenderTarget();
+
 	static RenderTarget* Create(
 		Device* device,
 		VkExtent2D resloution,
@@ -23,6 +24,16 @@ public:
 		uint32_t attachmentNumber,
 		std::vector<VkImageView>* framebuffers = nullptr
 	);
+
+	static RenderTarget* Create(
+		Device* device,
+		VkExtent2D resloution,
+		AttachmentInfo* req,
+		uint32_t attachmentNumber,
+		std::vector<Texture*> colourAttachments,
+		std::vector<VkImageView>* framebuffers = nullptr
+	);
+
 	static RenderTarget* CreateFromTextures(Device* device, std::vector<Texture*> attachments, std::vector<VkImageView>* frameBufferImageViews = nullptr);
 	void SetUp(std::vector<VkImageView>* frameBufferImageViews = nullptr);
 	~RenderTarget();

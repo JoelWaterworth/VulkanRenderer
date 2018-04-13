@@ -42,7 +42,48 @@ RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo*
 
 	rt->attachments.resize(attachmentCount);
 	for (int i = 0; i < attachmentCount; i++) {
-		rt->attachments[i] = Texture::Create(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
+		rt->attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
+	}
+	rt->SetUp(frameBufferImageViews);
+	return rt;
+}
+
+RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<Texture*> colourAttachments, std::vector<VkImageView>* frameBufferImageViews) {
+	RenderTarget* rt = new RenderTarget();
+	rt->resolution = r;
+	rt->_device = device;
+	if (attachmentCount < 2) {
+		assert("colourReq cannot be empty");
+	}
+
+	VkSamplerCreateInfo samplerInfo = {};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_NEAREST;
+	samplerInfo.minFilter = VK_FILTER_NEAREST;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 1.0f;
+	samplerInfo.anisotropyEnable = 0;
+	samplerInfo.maxAnisotropy = 1.0f;
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	samplerInfo.compareEnable = 0;
+	samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+	samplerInfo.unnormalizedCoordinates = 0;
+	VkSampler sampler = nullptr;
+	VK_CHECK_RESULT(vkCreateSampler(device->handle(), &samplerInfo, nullptr, &rt->sampler));
+
+	rt->attachments.resize(attachmentCount);
+	for (int i = 0; i < attachmentCount; i++) {
+		if (i == (attachmentCount - 1)) {
+			rt->attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
+		}
+		else {
+			rt->attachments[i] = colourAttachments[i];
+		}
 	}
 	rt->SetUp(frameBufferImageViews);
 	return rt;

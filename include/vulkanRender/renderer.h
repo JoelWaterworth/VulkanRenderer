@@ -48,8 +48,11 @@ private:
 	void GetCapabilities();
 	void CreateSwapchain();
 	void CreateFencesSemaphore();
-	void BuildPresentCommandBuffer(VkCommandBuffer commandBuffer);
+	void BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* world);
 	void BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world);
+	void generateBRDFLUT();
+	void generateIrradianceCube();
+	void generatePrefilteredCube();
 	bool debugMarkerActive = false;
 	bool prepared = false;
 	VkDebugReportCallbackCreateInfoEXT dbgCreateInfo = {};
@@ -66,9 +69,22 @@ private:
 	VkFence _renderFences[FRAME_LAG];
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
-	Texture* _texture = nullptr;
+
+	Texture* _environmentCube = nullptr;
+	Texture* _lutBrdf = nullptr;
+	Texture* _irradianceCube = nullptr;
+	Texture* _prefilteredCube = nullptr;
+
+	Texture* _baseColour = nullptr;
+	Texture* _normal = nullptr;
+	Texture* _roughness = nullptr;
+	Texture* _metallic = nullptr;
+	Texture* _ao = nullptr;
+
 	Mesh* _monkey = nullptr;
 	Mesh* _plane = nullptr;
+	Mesh* _box = nullptr;
+	 
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
 	Material _cameraDescriptor;

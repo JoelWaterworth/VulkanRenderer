@@ -3,10 +3,11 @@
 #include <iostream>
 #include <string>
 #include "playerCamera.h"
+#include "lightActor.h"
 
 Engine::Engine()
 {
-	window = WindowHandle(500, 500, std::string("vulkan renderer"), this);
+	window = WindowHandle(1000, 1000, std::string("vulkan renderer"), this);
 #ifdef ALLOWINJECT
 
 
@@ -30,9 +31,19 @@ Engine::Engine()
 #endif // ALLOWINJECT
 	renderer = Renderer(std::string("vulkan renderer"), &window, true, true);
 	world = World();
-	auto camera = PlayerCamera();
-	camera.transform = Transform(glm::vec3(0.0f, 0.0f, -5.0f));
+	auto camera = PlayerCamera(Transform(glm::vec3(0.0f, 0.0f, -5.0f)));
 	world.addActor(&camera);
+
+	const float p = 15.0f;
+	auto light1 = LightActor(Transform(glm::vec3(-p, -p*0.5f, -p)));
+	world.addActor(&light1);
+	auto light2 = LightActor(Transform(glm::vec3(-p, -p*0.5f,  p)));
+	world.addActor(&light2);
+	auto light3 = LightActor(Transform(glm::vec3( p, -p*0.5f,  p)));
+	world.addActor(&light3);
+	auto light4 = LightActor(Transform(glm::vec3( p, -p*0.5f, -p)));
+	world.addActor(&light4);
+	
 	clock_t begin = clock();
 	while (window.Update()) {
 		clock_t end = clock();
