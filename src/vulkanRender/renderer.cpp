@@ -662,7 +662,7 @@ void Renderer::generateBRDFLUT()
 	viewport.width = (float)dim;
 	viewport.minDepth =  0.0f;
 	viewport.maxDepth = 1.0f;
-	VkRect2D scissor = { dim, dim, 0, 0 };
+	VkRect2D scissor = { 0, 0, dim, dim };
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
@@ -743,7 +743,7 @@ void Renderer::generateIrradianceCube()
 	renderPassBeginInfo.pClearValues = clearValues;
 	renderPassBeginInfo.framebuffer = renderTarget->getFramebuffers()[0];
 
-	VkRect2D scissor = { dim, dim, 0, 0 };
+	VkRect2D scissor = { 0, 0, dim, dim };
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	VkImageSubresourceRange subresourceRange = {};
@@ -832,7 +832,7 @@ void Renderer::generatePrefilteredCube()
 	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0));
 
 	RenderTarget* renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
-	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/present.vert"), path("assets/shaders/genbrdflut.frag"), layout);
+	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/prefilterenvmap.frag"), layout);
 
 	struct PushBlock {
 		glm::mat4 mvp;
@@ -883,7 +883,7 @@ void Renderer::generatePrefilteredCube()
 	renderPassBeginInfo.pClearValues = clearValues;
 	renderPassBeginInfo.framebuffer = renderTarget->getFramebuffers()[0];
 	
-	VkRect2D scissor = { dim, dim, 0, 0 };
+	VkRect2D scissor = { 0, 0, dim, dim };
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 
 	VkImageSubresourceRange subresourceRange = {};
@@ -945,6 +945,7 @@ void Renderer::generatePrefilteredCube()
 
 			_prefilteredCube->copyImage(cmd, renderTarget->getAttachments()[0], 1, &copyRegion);
 			renderTarget->getAttachments()[0]->setImageLayout(cmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, plah);
+
 		}
 	}
 
