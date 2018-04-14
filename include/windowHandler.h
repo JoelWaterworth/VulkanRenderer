@@ -34,7 +34,11 @@ public:
 
 	VkSurfaceKHR createSurface(VkInstance inst);
 
-	glm::uvec2 mousePos;
+	glm::vec2 deltaMousePos;
+
+	glm::vec2 mousePos;
+
+	bool bisLMouse;
 
 	std::set<char> activeKeys;
 

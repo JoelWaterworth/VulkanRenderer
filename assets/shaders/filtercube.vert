@@ -2,10 +2,8 @@
 
 layout (location = 0) in vec3 inPos;
 
-layout(binding = 0) uniform UBO {
-	mat4 mvp;
-	float deltaPhi;
-	float deltaTheta;
+layout(push_constant) uniform PushConsts {
+	layout (offset = 0) mat4 mvp;
 } consts;
 
 layout (location = 0) out vec3 outUVW;

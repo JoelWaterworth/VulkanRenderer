@@ -3,15 +3,12 @@
 layout (location = 0) in vec3 inPos;
 layout (location = 0) out vec4 outColor;
 
-layout (binding = 1) uniform samplerCube samplerEnv;
+layout (binding = 0) uniform samplerCube samplerEnv;
 
-layout(binding = 0) uniform UBO {
-	mat4 mvp;
-	float roughness;
-	uint numSamples;
+layout(push_constant) uniform PushConsts {
+	layout (offset = 64) float roughness;
+	layout (offset = 68) uint numSamples;
 } consts;
-
-
 
 const float PI = 3.1415926536;
 

@@ -89,11 +89,11 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	PresentRenderTarget = RenderTarget::Create(_device, resolution, PresentAttachmentInfo, 2, &swapchain.view);
 	DeferredRenderTarget = RenderTarget::Create(_device, resolution, defferedAttachmentInfo.data(), defferedAttachmentInfo.size());
-	_baseColour = Texture::Create(_device, path("assets/textures/Tilebasecolor.png"));
-	_normal = Texture::Create(_device, path("assets/textures/Tilenormal.png"));
-	_roughness = Texture::Create(_device, path("assets/textures/Tileroughness.png"));
-	_metallic = Texture::Create(_device, path("assets/textures/Tilemetallic.png"));
-	_ao = Texture::Create(_device, path("assets/textures/TileAO.png"));
+	//_baseColour = Texture::Create(_device, path("assets/textures/Tilebasecolor.png"));
+	//_normal = Texture::Create(_device, path("assets/textures/Tilenormal.png"));
+	//_roughness = Texture::Create(_device, path("assets/textures/Tileroughness.png"));
+	//_metallic = Texture::Create(_device, path("assets/textures/Tilemetallic.png"));
+	//_ao = Texture::Create(_device, path("assets/textures/TileAO.png"));
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/sphere.dae"));
 	_box = Mesh::Create(_device, path("assets/Mesh/cube.obj"));
@@ -140,7 +140,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	for (int x = 0; x < 5; x++) {
 		for (int y = 0; y < 5; y++) {
 			Model m = {};
-			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, -10.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, 10.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 			m.metalic = y * 0.2f;
 			m.roughness = x * 0.2f;
 			m.colour = glm::vec3(0.1f, 0.1f, 0.1f);
@@ -283,16 +283,16 @@ void Renderer::Run(World* world) {
 void Renderer::destroy()
 {
 	vkDeviceWaitIdle(_device->handle());
-	_baseColour->destroy(_device);
-	_normal->destroy(_device);
-	_roughness->destroy(_device);
-	_metallic->destroy(_device);
-	_ao->destroy(_device);
-	delete _baseColour;
-	delete _normal;
-	delete _roughness;
-	delete _metallic;
-	delete _ao;
+	//_baseColour->destroy(_device);
+	//_normal->destroy(_device);
+	//_roughness->destroy(_device);
+	//_metallic->destroy(_device);
+	//_ao->destroy(_device);
+	//delete _baseColour;
+	//delete _normal;
+	//delete _roughness;
+	//delete _metallic;
+	//delete _ao;
 	delete _lights;
 	_positions.destroy(_device);
 	_cameraDescriptor.destroy(_device);
@@ -496,9 +496,10 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 		_cameraMat.light[i] = lights[i];
 	}
 	Camera camera = world->getCamera();
-	_cameraMat.world = glm::translate(glm::mat4(), camera.transform.loction * -1.0f);
+	_cameraMat.view = glm::translate(glm::mat4(1.0f), camera.transform.loction);
+	_cameraMat.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	_cameraMat.lightCount = lights.size();
-	_cameraMat.viewPos = camera.transform.loction;
+	_cameraMat.viewPos = glm::vec3(-0.55, -0.85, -12.00);
 	_cameraMat.gamma = camera.gamma;
 	_cameraMat.exposure = camera.exposure;
 
@@ -687,24 +688,30 @@ void Renderer::generateIrradianceCube()
 
 	RenderTarget* renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
 
-	std::vector<ShaderLayout> layout;
-	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0));
-	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0));
-	
-	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/irradiancecube.frag"), layout);
-
 	struct PushBlock {
 		glm::mat4 mvp;
 		float deltaPhi = (2.0f * float(M_PI)) / 180.0f;
 		float deltaTheta = (0.5f * float(M_PI)) / 64.0f;
 	} pushBlock;
+
 	PushBlock block = {};
+
+	std::vector<VkPushConstantRange> layoutConts;
+	VkPushConstantRange push = {};
+	push.offset = 0;
+	push.size = sizeof(PushBlock);
+	push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutConts.push_back(push);
 
 	UniformBuffer* blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
 	vector<UniformBinding> bindings = {
-		UniformBinding(blockBinding, 0),
-		UniformBinding(_environmentCube, 1)
+		UniformBinding(_environmentCube, 0)
 	};
+
+	std::vector<ShaderLayout> layout;
+	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0));
+
+	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/irradiancecube.frag"), layout, layoutConts);
 
 	Material material = Material::CreateMaterialWithShader(_device, _genBRDflut, bindings);
 
@@ -766,7 +773,7 @@ void Renderer::generateIrradianceCube()
 			vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
+			vkCmdPushConstants(cmd, _genBRDflut->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
 			material.makeCurrent(cmd);
 			_box->bind(cmd);
@@ -827,23 +834,29 @@ void Renderer::generatePrefilteredCube()
 	};
 
 	std::vector<ShaderLayout> layout;
-	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0));
-	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0));
-
-	RenderTarget* renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
-	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/prefilterenvmap.frag"), layout);
+	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0));
 
 	struct PushBlock {
 		glm::mat4 mvp;
 		float roughness;
 		uint32_t numSamples = 32u;
 	} pushBlock;
+
+	std::vector<VkPushConstantRange> layoutConts;
+	VkPushConstantRange push = {};
+	push.offset = 0;
+	push.size = sizeof(PushBlock);
+	push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+	layoutConts.push_back(push);
+	RenderTarget* renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
+	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/prefilterenvmap.frag"), layout, layoutConts);
+
+
 	PushBlock block = {};
 
 	UniformBuffer* blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
 	vector<UniformBinding> bindings = {
-		UniformBinding(blockBinding, 0),
-		UniformBinding(_environmentCube, 1)
+		UniformBinding(_environmentCube, 0)
 	};
 
 	Material material = Material::CreateMaterialWithShader(_device, _genBRDflut, bindings);
@@ -903,11 +916,11 @@ void Renderer::generatePrefilteredCube()
 
 		for (uint32_t f = 0; f < 6; f++) {
 			pushBlock.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
-			blockBinding->update(_device, &pushBlock);
+			//blockBinding->update(_device, &pushBlock);
 			vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
+			vkCmdPushConstants(cmd, _genBRDflut->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
 			material.makeCurrent(cmd);
 			_box->bind(cmd);

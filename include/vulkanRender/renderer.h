@@ -32,7 +32,8 @@ struct UBO {
 
 struct CameraMat {
 	glm::mat4 per;
-	glm::mat4 world;
+	glm::mat4 view;
+	glm::mat4 model;
 	Light light[4];
 	glm::vec3 viewPos;
 	int lightCount;

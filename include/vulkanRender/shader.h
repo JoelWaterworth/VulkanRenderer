@@ -36,7 +36,7 @@ struct ShaderLayout {
 class Shader
 {
 public:
-	static Shader* Create(Device* device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts);
+	static Shader* Create(Device* device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts = std::vector<VkPushConstantRange>(), bool bIsDisableVertexDescriptor = false);
 	Shader();
 	~Shader();
 

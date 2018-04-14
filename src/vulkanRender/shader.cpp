@@ -59,7 +59,7 @@ pair<VkShaderModule, VkPipelineShaderStageCreateInfo> Shader::createPipelineStag
 	return make_pair(Module, pipelineStageInfo);
 }
 
-Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts)
+Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts, bool bIsDisableVertexDescriptor)
 {
 	pair<VkShaderModule, VkPipelineShaderStageCreateInfo> vertRes =
 		Shader::createPipelineStageInfo(device, vertPath, VK_SHADER_STAGE_VERTEX_BIT);
@@ -72,33 +72,42 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 		vertRes.second, fragRes.second
 	};
 
-	VkVertexInputBindingDescription vertexInputBindingDescriptions[1] = {};
-	vertexInputBindingDescriptions[0].binding = 0;
-	vertexInputBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-	vertexInputBindingDescriptions[0].stride = sizeof(float) * 8;
-
-	VkVertexInputAttributeDescription vertexInputAttributeDescriptions[3] = {};
-	vertexInputAttributeDescriptions[0].location = 0;
-	vertexInputAttributeDescriptions[0].binding = 0;
-	vertexInputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-	vertexInputAttributeDescriptions[0].offset = 0;
-
-	vertexInputAttributeDescriptions[1].location = 1;
-	vertexInputAttributeDescriptions[1].binding = 0;
-	vertexInputAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-	vertexInputAttributeDescriptions[1].offset = sizeof(float) * 3;
-
-	vertexInputAttributeDescriptions[2].location = 2;
-	vertexInputAttributeDescriptions[2].binding = 0;
-	vertexInputAttributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-	vertexInputAttributeDescriptions[2].offset = sizeof(float) * 6;
-
 	VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {};
 	vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputStateInfo.vertexAttributeDescriptionCount = 3;
-	vertexInputStateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions;
-	vertexInputStateInfo.vertexBindingDescriptionCount = 1;
-	vertexInputStateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions;
+
+	if (!bIsDisableVertexDescriptor) {
+		VkVertexInputBindingDescription vertexInputBindingDescriptions[1] = {};
+		vertexInputBindingDescriptions[0].binding = 0;
+		vertexInputBindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		vertexInputBindingDescriptions[0].stride = sizeof(float) * 8;
+
+		VkVertexInputAttributeDescription vertexInputAttributeDescriptions[3] = {};
+		vertexInputAttributeDescriptions[0].location = 0;
+		vertexInputAttributeDescriptions[0].binding = 0;
+		vertexInputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributeDescriptions[0].offset = 0;
+
+		vertexInputAttributeDescriptions[1].location = 1;
+		vertexInputAttributeDescriptions[1].binding = 0;
+		vertexInputAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributeDescriptions[1].offset = sizeof(float) * 3;
+
+		vertexInputAttributeDescriptions[2].location = 2;
+		vertexInputAttributeDescriptions[2].binding = 0;
+		vertexInputAttributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+		vertexInputAttributeDescriptions[2].offset = sizeof(float) * 6;
+		
+		vertexInputStateInfo.vertexAttributeDescriptionCount = 3;
+		vertexInputStateInfo.pVertexAttributeDescriptions = vertexInputAttributeDescriptions;
+		vertexInputStateInfo.vertexBindingDescriptionCount = 1;
+		vertexInputStateInfo.pVertexBindingDescriptions = vertexInputBindingDescriptions;
+	}
+	else {
+		vertexInputStateInfo.vertexAttributeDescriptionCount = 0;
+		vertexInputStateInfo.pVertexAttributeDescriptions = nullptr;
+		vertexInputStateInfo.vertexBindingDescriptionCount = 0;
+		vertexInputStateInfo.pVertexBindingDescriptions = nullptr;
+	}
 
 	VkPipelineInputAssemblyStateCreateInfo vertexInputAssemblyStateInfo = {};
 	vertexInputAssemblyStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -224,6 +233,9 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	layoutCreateInfo.setLayoutCount = descriptorCount;
 	layoutCreateInfo.pSetLayouts = descLayouts.data();
+	layoutCreateInfo.pushConstantRangeCount = consts.size();
+	layoutCreateInfo.pPushConstantRanges = consts.data();
+
 	printf("pre vkCreatePipelineLayout\n");
 	VkPipelineLayout pipelineLayout;
 	VK_CHECK_RESULT(vkCreatePipelineLayout(device->handle(), &layoutCreateInfo, nullptr, &pipelineLayout));

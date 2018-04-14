@@ -105,10 +105,10 @@ bool WindowHandle::Update()
 		if (GetCursorPos(&p))
 		{
 			
-			mousePos.x = p.x;
-			mousePos.y = p.y;
-//			SetCursorPos(0, 0);
-			//cursor position now in p.x and p.y
+			glm::vec2 prevMousePos = mousePos;
+			mousePos.x = (float)p.x;
+			mousePos.y = (float)p.y;
+			deltaMousePos = prevMousePos - mousePos;
 		}
 		switch (msg.message)
 		{
@@ -124,6 +124,12 @@ bool WindowHandle::Update()
 
 		case WM_KEYUP:
 			activeKeys.erase(MapVirtualKey(msg.wParam, MAPVK_VK_TO_CHAR));
+			break;
+		case WM_LBUTTONUP:
+			bisLMouse = false;
+			break;
+		case WM_LBUTTONDOWN:
+			bisLMouse = true;
 			break;
 		}
 		TranslateMessage(&msg);

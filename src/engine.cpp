@@ -31,7 +31,7 @@ Engine::Engine()
 #endif // ALLOWINJECT
 	renderer = Renderer(std::string("vulkan renderer"), &window, true, true);
 	world = World();
-	auto camera = PlayerCamera(Transform(glm::vec3(0.0f, 0.0f, -5.0f)));
+	auto camera = PlayerCamera(Transform(glm::vec3(0.0f, 0.0f, -12.0f), glm::vec3(0.0f, 0.0f, 0.f)));
 	world.addActor(&camera);
 
 	const float p = 15.0f;
@@ -48,7 +48,11 @@ Engine::Engine()
 	while (window.Update()) {
 		clock_t end = clock();
 		double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-		world.update(window.activeKeys, elapsed_secs);
+		Event e = {};
+		e.activeKeys = window.activeKeys;
+		e.mousePos = window.deltaMousePos;
+		e.bisLeftMouseDown = window.bisLMouse;
+		world.update(e, elapsed_secs);
 		renderer.Run(&world);
     }
 	renderer.destroy();

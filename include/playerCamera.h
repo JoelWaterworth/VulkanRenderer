@@ -18,6 +18,6 @@ public:
 
 	Camera getCamera();
 
-	virtual void receiveInput(std::set<char> keys, double deltaTime);
+	virtual void receiveInput(Event e, double deltaTime);
 };
 

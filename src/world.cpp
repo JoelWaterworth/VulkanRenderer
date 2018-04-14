@@ -1,7 +1,6 @@
 #include "world.h"
 #include "actor.h"
 
-
 World::World() {
 
 }
@@ -12,9 +11,9 @@ World::~World() {
 	}
 }
 
-void World::update(std::set<char> keys, double deltaTime){
+void World::update(Event e, double deltaTime){
 	for (auto actor : actors) {
-		actor->receiveInput(keys, deltaTime);
+		actor->receiveInput(e, deltaTime);
 	}
 }
 

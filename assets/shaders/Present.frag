@@ -17,6 +17,7 @@ layout (binding = 0, set = 1) uniform Model {
 layout (binding = 0, set = 0) uniform Camera {
 	mat4 per;
 	mat4 world;
+	mat4 model;
 	Light lights[4];
 	vec3 viewPos;
 	int lightCount;
@@ -34,7 +35,6 @@ layout (location = 2) in vec2 i_uv;
 layout (location = 0) out vec4 FragColor;
 
 const float PI = 3.14159265359;
-const float exposure = 4.5;
 
 vec3 Uncharted2Tonemap(vec3 x)
 {
@@ -122,12 +122,11 @@ void main()
 	vec3 albedo = model.colour;
 	float metallic = model.metallic;
 	float roughness =  model.roughness;
+
+
 	vec3 N = normalize(normal);
 	vec3 V = normalize(camera.viewPos - WorldPos);
-	vec3 R = reflect(-V, N); 
-	vec2 brdf = texture(samplerBRDFLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
-	vec3 reflection = prefilteredReflection(R, roughness).rgb;	
-	vec3 irradiance = texture(samplerIrradiance, N).rgb;
+	vec3 R = reflect(V, N); 
 
 	vec3 F0 = vec3(0.04); 
 	F0 = mix(F0, albedo, metallic);
@@ -137,6 +136,10 @@ void main()
 		vec3 L = normalize(camera.lights[i].position.xyz - WorldPos.xyz);
 		Lo += specularContribution(L, V, N, F0, metallic, roughness, albedo);
 	}  
+
+	vec2 brdf = texture(samplerBRDFLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
+	vec3 reflection = prefilteredReflection(R, roughness).rgb;	
+	vec3 irradiance = texture(samplerIrradiance, N).rgb;
 
 	// Diffuse based on irradiance
 	vec3 diffuse = irradiance * albedo;	

@@ -13,7 +13,8 @@ layout (location = 2) out vec2 o_uv;
 
 layout (binding = 0, set = 0) uniform Camera {
 	mat4 per;
-	mat4 world;
+	mat4 view;
+	mat4 model;
 } camera;
 
 layout (binding = 0, set = 1) uniform World {
@@ -23,8 +24,9 @@ layout (binding = 0, set = 1) uniform World {
 
 void main()
 {
-	o_pos = world.transform * vec4(i_position, 1);
-	o_nor = i_normal;
+	vec4 locPos = vec4(i_position, 1.0);
+	o_pos = world.transform * locPos;
+	o_nor = mat3(camera.model) * i_normal;
 	o_uv = i_uv;
-    gl_Position = camera.per * camera.world * o_pos;
+    gl_Position = camera.per * camera.view * o_pos;
 }
