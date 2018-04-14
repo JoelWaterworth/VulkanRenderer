@@ -23,6 +23,31 @@
 #define VULKAN_HPP_DISABLE_ENHANCED_MODE
 #endif // !VULKAN_HPP_DISABLE_ENHANCED_MODE
 
+struct UBO {
+	Light light[4];
+	glm::vec3 viewPos;
+	int lightCount;
+	UBO() : viewPos(glm::vec3(0.0f, 0.0f, 0.0f)), lightCount(0) {};
+};
+
+struct CameraMat {
+	glm::mat4 per;
+	glm::mat4 world;
+	Light light[4];
+	glm::vec3 viewPos;
+	int lightCount;
+	float gamma;
+	float exposure;
+};
+
+
+struct Model {
+	glm::mat4 transform;
+	glm::vec3 colour;
+	float roughness;
+	float metalic;
+};
+
 struct SurfaceCapabilities {
 	VkSurfaceCapabilitiesKHR capabilities;
 	VkSurfaceTransformFlagBitsKHR preTransform;
@@ -87,8 +112,10 @@ private:
 	 
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
+	Shader* _skyboxShader = nullptr;
 	Material _cameraDescriptor;
 	Material _positions;
+	Material _skyboxDescriptor;
 	Material _presentMaterial;
 	Material _deferredMaterial;
 	UniformInterface* _unfirom = nullptr;
@@ -98,6 +125,7 @@ private:
 	VkInstance instance = nullptr;
 	Device* _device = nullptr;
 	SurfaceCapabilities capabilities;
+	CameraMat _cameraMat = {};
 	VkSurfaceKHR surface = nullptr;
 	RenderTarget* PresentRenderTarget = nullptr;
 	RenderTarget* DeferredRenderTarget = nullptr;

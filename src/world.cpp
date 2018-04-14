@@ -28,7 +28,7 @@ Camera World::getCamera()
 	for (auto actor : actors) {
 		PlayerCamera *ptr = dynamic_cast<PlayerCamera*>(actor);
 		if (ptr) {
-			return { ptr->transform };
+			return ptr->getCamera();
 		}
 	}
 	return Camera();

@@ -3,7 +3,8 @@
 
 struct Camera {
 	Transform transform;
-
+	float exposure = 0.0f;
+	float gamma = 0.0f;
 	Camera(Transform tran = Transform()) : transform(tran) {};
 };
 
@@ -12,6 +13,10 @@ public:
 	PlayerCamera();
 	PlayerCamera(Transform trans) : Actor(trans) {};
 	~PlayerCamera();
+	float exposure = 4.5f;
+	float gamma = 2.2f;
+
+	Camera getCamera();
 
 	virtual void receiveInput(std::set<char> keys, double deltaTime);
 };

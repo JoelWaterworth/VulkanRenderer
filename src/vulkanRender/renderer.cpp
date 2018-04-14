@@ -13,23 +13,6 @@
 
 #define M_PI       3.14159265358979323846 
 
-struct UBO {
-	Light light[4];
-	glm::vec3 viewPos;
-	int lightCount;
-	UBO() : viewPos(glm::vec3(0.0f, 0.0f, 0.0f)), lightCount(0) {};
-};
-
-struct CameraMat {
-	glm::mat4 per;
-};
-
-
-struct Model {
-	glm::mat4 transform;
-	glm::mat4 inverse;
-};
-
 PFN_vkCreateDebugReportCallbackEXT		CreateDebugReportCallbackEXT = VK_NULL_HANDLE;
 PFN_vkDestroyDebugReportCallbackEXT		DestroyDebugReportCallbackEXT = VK_NULL_HANDLE;
 
@@ -101,6 +84,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		{ capabilities.format.format,		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 1 },
 		{ VK_FORMAT_D16_UNORM,			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1 } };
 
+
 	VkExtent2D resolution = capabilities.capabilities.maxImageExtent;
 
 	PresentRenderTarget = RenderTarget::Create(_device, resolution, PresentAttachmentInfo, 2, &swapchain.view);
@@ -116,6 +100,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	_environmentCube = Texture::CreateCubeMap(_device, path("assets/textures/hdr/pisa_cube.ktx"), VK_FORMAT_R16G16B16A16_SFLOAT);
 	printf("load mesh complete\n");
 	_monkey->setBufferName(_device, "monkey");
+	/*
 	std::vector<ShaderLayout> deferredLayout =
 	{	ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_VERTEX_BIT,		0, 0),
 		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_VERTEX_BIT,		0, 1),
@@ -125,29 +110,30 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,	3, 2),
 		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,	4, 2)
 	};
-	
+	*/
 	std::vector<ShaderLayout> presentLayout = {
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 3, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 4, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 5, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_FRAGMENT_BIT, 6, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 7, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 8, 0),
-		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	VK_SHADER_STAGE_FRAGMENT_BIT, 9, 0)
+		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, 1)
+	};
+
+	std::vector<ShaderLayout> skyboxLayout = {
+		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, 0),
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0),
 	};
 
 	printf("Create Shader\n");
-	_presentShader	= Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
-	printf("Create _deferredShader\n");
-	_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
+	_presentShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
+	_skyboxShader  = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/skybox.vert"), path("assets/shaders/skybox.frag"), skyboxLayout);
+	//printf("Create _deferredShader\n");
+	//_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 
 	//_skyShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/skybox.vert"), path("assets/shaders/skybox.frag"), presentLayout);
 
-	CameraMat camera = {};
-	camera.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
+	_cameraMat = {};
+	_cameraMat.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
 
 	float spacing = 2.0f;
 	vector<Model> models;
@@ -155,21 +141,29 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		for (int y = 0; y < 5; y++) {
 			Model m = {};
 			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, -10.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
-			m.inverse = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.0f, 0.0f));
+			m.metalic = y * 0.2f;
+			m.roughness = x * 0.2f;
+			m.colour = glm::vec3(0.1f, 0.1f, 0.1f);
 			models.push_back(m);
 		}
 	}
+
 	printf("Create _cameraSpace\n");
-	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, camera);
+	_cameraSpace = UniformBuffer::CreateUniformBuffer(_device, _cameraMat);
 	_matPostion = UniformDynamicBuffer::Create(_device, models);
 
 	generateBRDFLUT();
 	generateIrradianceCube();
 	generatePrefilteredCube();
-	
 
-	std::vector<UniformBinding> cameraUniforms = { UniformBinding(_cameraSpace,  0, 0) };
+	std::vector<UniformBinding> cameraUniforms = { 
+		UniformBinding(_cameraSpace,  0, 0),
+		UniformBinding(_irradianceCube,  1, 0),
+		UniformBinding(_lutBrdf,  2, 0),
+		UniformBinding(_prefilteredCube,  3, 0)
+	};
 	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
+
 	std::vector<UniformBinding> deferredUniforms = { 
 		UniformBinding(_baseColour, 0, 2),
 		UniformBinding(_normal, 1, 2),
@@ -201,26 +195,17 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	printf("Create _lights\n");
 	_lights = UniformBuffer::CreateUniformBuffer(_device, lights);
 
-	std::vector<UniformBinding> _presentUniforms = {
-		{ DeferredRenderTarget->getAttachments()[0], 0, 0 },
-		{ DeferredRenderTarget->getAttachments()[1], 1, 0 },
-		{ DeferredRenderTarget->getAttachments()[2], 2, 0 },
-		{ DeferredRenderTarget->getAttachments()[3], 3, 0 },
-		{ DeferredRenderTarget->getAttachments()[4], 4, 0 },
-		{ DeferredRenderTarget->getAttachments()[5], 5, 0 },
-		{ _lights, 6, 0 },
-		{ _irradianceCube , 7, 0 },
-		{ _lutBrdf , 8, 0},
-		{ _prefilteredCube , 9, 0}
+	std::vector<UniformBinding> skyUniform = {
+		UniformBinding(_cameraSpace,  0, 0),
+		UniformBinding(_environmentCube,  1, 0),
 	};
 
-
-
-	_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
+	//_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _deferredShader, cameraUniforms, 0, false);
-	_positions = Material::CreateMaterialWithShader(_device, _deferredShader, posUniforms, 1, false, _matPostion.getAlign());
-	_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
+	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _presentShader, cameraUniforms, 0, false);
+	_positions = Material::CreateMaterialWithShader(_device, _presentShader, posUniforms, 1, false, _matPostion.getAlign());
+	_skyboxDescriptor = Material::CreateMaterialWithShader(_device, _skyboxShader, skyUniform, 0, false);
+	//_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -252,24 +237,24 @@ void Renderer::Run(World* world) {
 	VK_CHECK_RESULT(vkWaitForFences(_device->handle(), 1, &_renderFences[_frameIndex], VK_TRUE, UINT64_MAX));
 	VK_CHECK_RESULT(vkResetFences(_device->handle(), 1, &_renderFences[_frameIndex]));
 	
-	BuildOffscreenCommandBuffer(_offscreenDraw[_frameIndex], world);
+	//BuildOffscreenCommandBuffer(_offscreenDraw[_frameIndex], world);
 
 	VkPipelineStageFlags const pipeStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.pWaitDstStageMask = &pipeStageFlags;
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = &_presentComplete[_frameIndex];
+	//submitInfo.pWaitSemaphores = &_presentComplete[_frameIndex];
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &_offscreenDraw[_frameIndex];
+	//submitInfo.pCommandBuffers = &_offscreenDraw[_frameIndex];
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = &_offscreenRender[_frameIndex];
+	//submitInfo.pSignalSemaphores = &_offscreenRender[_frameIndex];
 	
-	VK_CHECK_RESULT(vkQueueSubmit(_device->getGraphicsQueue(), 1, &submitInfo, VkFence()));
+	//VK_CHECK_RESULT(vkQueueSubmit(_device->getGraphicsQueue(), 1, &submitInfo, VkFence()));
 
 	BuildPresentCommandBuffer(_draw[_frameIndex], world);
 
-	submitInfo.pWaitSemaphores = &_offscreenRender[_frameIndex];
+	submitInfo.pWaitSemaphores = &_presentComplete[_frameIndex];
 	submitInfo.pSignalSemaphores = &_completeRender[_frameIndex];
 	submitInfo.pCommandBuffers = &_draw[_frameIndex];
 
@@ -311,10 +296,10 @@ void Renderer::destroy()
 	delete _lights;
 	_positions.destroy(_device);
 	_cameraDescriptor.destroy(_device);
-	_presentMaterial.destroy(_device);
-	_deferredMaterial.destroy(_device);
+	//_presentMaterial.destroy(_device);
+//	_deferredMaterial.destroy(_device);
 	delete _presentShader;
-	delete _deferredShader;
+//	delete _deferredShader;
 	_monkey->destroy(_device);
 	delete _monkey;
 	_plane->destroy(_device);
@@ -507,13 +492,17 @@ void Renderer::CreateFencesSemaphore() {
 
 void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* world){
 	std::vector<Light> lights = world->getLights();
-	UBO light = {};
 	for (int i = 0; i < lights.size(); i++) {
-		light.light[i] = lights[i];
+		_cameraMat.light[i] = lights[i];
 	}
-	light.lightCount = lights.size();
-	light.viewPos = world->getCamera().transform.loction;
-	_lights->update(_device, &light);
+	Camera camera = world->getCamera();
+	_cameraMat.world = glm::translate(glm::mat4(), camera.transform.loction * -1.0f);
+	_cameraMat.lightCount = lights.size();
+	_cameraMat.viewPos = camera.transform.loction;
+	_cameraMat.gamma = camera.gamma;
+	_cameraMat.exposure = camera.exposure;
+
+	_cameraSpace->update(_device, &_cameraMat);
 
 	VkCommandBufferBeginInfo commandInfo = {};
 	commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -543,7 +532,6 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 
 	vkCmdBeginRenderPass(commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipeline());
-	_presentMaterial.makeCurrent(commandBuffer);
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
 	viewport.width = resolution.width;
@@ -554,10 +542,21 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 	VkRect2D scissor = {};
 	scissor.extent = resolution;
 
+	_cameraDescriptor.makeCurrent(commandBuffer, _presentShader);
 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-	_plane->bind(commandBuffer);
-	_plane->draw(commandBuffer);
+	_monkey->bind(commandBuffer);
+	for (int i = 0; i < 25; i++) {
+		_positions.makeCurrentAlign(commandBuffer, i, _presentShader);
+		_monkey->draw(commandBuffer);
+	}
+	/*
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _skyboxShader->GetPipeline());
+	_skyboxDescriptor.makeCurrent(commandBuffer, _skyboxShader);
+	_box->bind(commandBuffer);
+	_box->draw(commandBuffer);
+	*/
+
 	vkCmdEndRenderPass(commandBuffer);
 	_device->endRegion(commandBuffer);
 	vkEndCommandBuffer(commandBuffer);
@@ -635,7 +634,7 @@ void Renderer::generateBRDFLUT()
 		} };
 	RenderTarget* renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
 	
-	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/present.vert"), path("assets/shaders/genbrdflut.frag"), std::vector<ShaderLayout>());
+	Shader* _genBRDflut = Shader::Create(_device, renderTarget, path("assets/shaders/passThrough.vert"), path("assets/shaders/genbrdflut.frag"), std::vector<ShaderLayout>());
 
 	VkCommandBuffer cmd = VK_NULL_HANDLE;
 	_device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &cmd);

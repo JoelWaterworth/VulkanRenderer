@@ -8,23 +8,28 @@ struct Light {
 	float radius;
 };
 
-layout (binding = 0) uniform sampler2D gAlbedo;
-layout (binding = 1) uniform sampler2D gPosition;
-layout (binding = 2) uniform sampler2D gNormal;
-layout (binding = 3) uniform sampler2D gMetallic;
-layout (binding = 4) uniform sampler2D gRoughness;
-layout (binding = 5) uniform sampler2D gAO;
-layout (binding = 6) uniform UBO {
+layout (binding = 0, set = 1) uniform Model {
+	mat4 transform;
+	vec3 colour;
+	float roughness;
+	float metallic;
+} model;
+layout (binding = 0, set = 0) uniform Camera {
+	mat4 per;
+	mat4 world;
 	Light lights[4];
-    vec3 viewPos;
+	vec3 viewPos;
 	int lightCount;
-} ubo;
-layout (binding = 7) uniform samplerCube samplerIrradiance;
-layout (binding = 8) uniform sampler2D samplerBRDFLUT;
-layout (binding = 9) uniform samplerCube prefilteredMap;
+	float gamma;
+	float exposure;
+} camera;
+layout (binding = 1, set = 0) uniform samplerCube samplerIrradiance;
+layout (binding = 2, set = 0) uniform sampler2D samplerBRDFLUT;
+layout (binding = 3, set = 0) uniform samplerCube prefilteredMap;
 
-layout (location = 0) in vec3 i_Normal;
-layout (location = 1) in vec2 i_uv;
+layout (location = 0) in vec4 i_pos;
+layout (location = 1) in vec3 i_normal;
+layout (location = 2) in vec2 i_uv;
 
 layout (location = 0) out vec4 FragColor;
 
@@ -112,14 +117,13 @@ vec3 specularContribution(vec3 L, vec3 V, vec3 N, vec3 F0, float metallic, float
 
 void main()
 {		  
-	vec3 WorldPos = texture(gPosition, i_uv).rgb;
-	vec3 normal = texture(gNormal, i_uv).rgb;
-	vec3 albedo = texture(gAlbedo, i_uv).rgb;
-	float metallic = texture(gMetallic, i_uv).r;
-	float roughness = texture(gRoughness, i_uv).r;
-	float ao = texture(gAO, i_uv).r;
+	vec3 WorldPos = i_pos.xyz;
+	vec3 normal = i_normal;
+	vec3 albedo = model.colour;
+	float metallic = model.metallic;
+	float roughness =  model.roughness;
 	vec3 N = normalize(normal);
-	vec3 V = normalize(ubo.viewPos - WorldPos);
+	vec3 V = normalize(camera.viewPos - WorldPos);
 	vec3 R = reflect(-V, N); 
 	vec2 brdf = texture(samplerBRDFLUT, vec2(max(dot(normal, V), 0.0), roughness)).rg;
 	vec3 reflection = prefilteredReflection(R, roughness).rgb;	
@@ -129,8 +133,8 @@ void main()
 	F0 = mix(F0, albedo, metallic);
 
 	vec3 Lo = vec3(0.0);
-	for(int i = 0; i < ubo.lightCount; i++) {
-		vec3 L = normalize(ubo.lights[i].position.xyz - WorldPos.xyz);
+	for(int i = 0; i < camera.lightCount; i++) {
+		vec3 L = normalize(camera.lights[i].position.xyz - WorldPos.xyz);
 		Lo += specularContribution(L, V, N, F0, metallic, roughness, albedo);
 	}  
 
@@ -150,10 +154,10 @@ void main()
 	vec3 color = ambient + Lo;
 
 	// Tone mapping
-	color = Uncharted2Tonemap(color * exposure);
+	color = Uncharted2Tonemap(color * camera.exposure);
 	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
 	// Gamma correction
-	color = pow(color, vec3(1.0f / 2.2f));
+	color = pow(color, vec3(1.0f / camera.gamma));
 
     FragColor = vec4(color, 1.0);
 }  

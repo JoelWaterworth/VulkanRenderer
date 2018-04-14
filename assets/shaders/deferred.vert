@@ -17,7 +17,6 @@ layout (binding = 0, set = 0) uniform Camera {
 
 layout (binding = 0, set = 1) uniform World {
 	mat4 transform;
-	mat4 inverse;
 } world;
 
 
