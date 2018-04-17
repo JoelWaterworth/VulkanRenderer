@@ -89,11 +89,13 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	PresentRenderTarget = RenderTarget::Create(_device, resolution, PresentAttachmentInfo, 2, &swapchain.view);
 	DeferredRenderTarget = RenderTarget::Create(_device, resolution, defferedAttachmentInfo.data(), defferedAttachmentInfo.size());
-	//_baseColour = Texture::Create(_device, path("assets/textures/Tilebasecolor.png"));
-	//_normal = Texture::Create(_device, path("assets/textures/Tilenormal.png"));
-	//_roughness = Texture::Create(_device, path("assets/textures/Tileroughness.png"));
-	//_metallic = Texture::Create(_device, path("assets/textures/Tilemetallic.png"));
-	//_ao = Texture::Create(_device, path("assets/textures/TileAO.png"));
+
+	_baseColour = Texture::Create(_device, path("assets/textures/Metal_basecolor.png"));
+	_normal = Texture::Create(_device, path("assets/textures/Metal_normal.png"));
+	_roughness = Texture::Create(_device, path("assets/textures/Metal_roughness.png"));
+	_metallic = Texture::Create(_device, path("assets/textures/Metal_metallic.png"));
+	_ao = Texture::Create(_device, path("assets/textures/Metal_AO.png"));
+
 	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
 	_monkey = Mesh::Create(_device, path("assets/Mesh/sphere.dae"));
 	_box = Mesh::Create(_device, path("assets/Mesh/cube.obj"));
@@ -113,9 +115,17 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	*/
 	std::vector<ShaderLayout> presentLayout = {
 		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, 0),
+
 		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 0),
 		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2, 0),
 		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3, 0),
+
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 0),//base color
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 0),//normal
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6, 0),//roughness
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 7, 0),//metallic
+		ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 8, 0),//ao
+
 		ShaderLayout(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, 1)
 	};
 
@@ -140,10 +150,10 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	for (int x = 0; x < 5; x++) {
 		for (int y = 0; y < 5; y++) {
 			Model m = {};
-			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, 10.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, 5.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 			m.metalic = y * 0.2f;
 			m.roughness = x * 0.2f;
-			m.colour = glm::vec3(0.1f, 0.1f, 0.1f);
+			m.colour = glm::vec3(1.0f, 0.0f, 0.0f);
 			models.push_back(m);
 		}
 	}
@@ -160,7 +170,13 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		UniformBinding(_cameraSpace,  0, 0),
 		UniformBinding(_irradianceCube,  1, 0),
 		UniformBinding(_lutBrdf,  2, 0),
-		UniformBinding(_prefilteredCube,  3, 0)
+		UniformBinding(_prefilteredCube,  3, 0),
+
+		UniformBinding(_baseColour,  4, 0),
+		UniformBinding(_normal,  5, 0),
+		UniformBinding(_roughness,  6, 0),
+		UniformBinding(_metallic,  7, 0),
+		UniformBinding(_ao,  8, 0)
 	};
 	std::vector<UniformBinding> posUniforms = { UniformBinding(&_matPostion,  0, 1)};
 
@@ -497,9 +513,9 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 	}
 	Camera camera = world->getCamera();
 	_cameraMat.view = glm::translate(glm::mat4(1.0f), camera.transform.loction);
-	_cameraMat.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	_cameraMat.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	_cameraMat.lightCount = lights.size();
-	_cameraMat.viewPos = glm::vec3(-0.55, -0.85, -12.00);
+	_cameraMat.viewPos = camera.transform.loction * -1.0f;
 	_cameraMat.gamma = camera.gamma;
 	_cameraMat.exposure = camera.exposure;
 

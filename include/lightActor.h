@@ -14,7 +14,7 @@ struct Light {
 class LightActor : public Actor
 {
 public:
-	glm::vec3 colour = glm::vec3();
+	glm::vec3 colour = glm::vec3(150.0f);
 	float radius = 0.0f;
 
 	inline Light getLight() {

@@ -170,8 +170,8 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 	std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(renderTarget->getColourAttachmentNum());
 	for (auto& a : colorBlendAttachmentStates) {
 		a.blendEnable = 0;
-		a.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
-		a.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+		a.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		a.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
 		a.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		a.colorBlendOp = VK_BLEND_OP_ADD;
 		a.alphaBlendOp = VK_BLEND_OP_ADD;

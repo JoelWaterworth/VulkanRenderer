@@ -35,13 +35,13 @@ Engine::Engine()
 	world.addActor(&camera);
 
 	const float p = 15.0f;
-	auto light1 = LightActor(Transform(glm::vec3(-p, -p*0.5f, -p)));
+	auto light1 = LightActor(Transform(glm::vec3(-p, -p, p*0.5f)));
 	world.addActor(&light1);
-	auto light2 = LightActor(Transform(glm::vec3(-p, -p*0.5f,  p)));
+	auto light2 = LightActor(Transform(glm::vec3(-p, p,  p*0.5f)));
 	world.addActor(&light2);
-	auto light3 = LightActor(Transform(glm::vec3( p, -p*0.5f,  p)));
+	auto light3 = LightActor(Transform(glm::vec3( p, p, p*0.5f)));
 	world.addActor(&light3);
-	auto light4 = LightActor(Transform(glm::vec3( p, -p*0.5f, -p)));
+	auto light4 = LightActor(Transform(glm::vec3( p, -p, p*0.5f)));
 	world.addActor(&light4);
 	
 	clock_t begin = clock();
