@@ -22,9 +22,16 @@ Components operator |(Components lhs, Components rhs)
 class Mesh : public Resource
 {
 public:
-	static Mesh* Create(Device* device, path p);
+	static Mesh Create(Device* device, path p);
 	Mesh(Device* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
-	~Mesh();
+	Mesh() :
+		_device(nullptr),
+		_indexBuffer(nullptr),
+		_vertexBuffer(nullptr),
+		_indexBufferLen(0),
+		_indexOffset(0),
+		_vertexOffset(0)
+	{};
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
 	virtual void destroy(Device* device);
@@ -32,10 +39,10 @@ public:
 	void setBufferName(Device* device, const char* name);
 private:
 	Device * _device;
-	EnBuffer* indexBuffer;
-	EnBuffer* vertexBuffer;
-	uint32_t indexBufferLen;
-	uint64_t indexOffset = 0;
-	uint64_t vertexOffset = 0;
+	EnBuffer* _indexBuffer;
+	EnBuffer* _vertexBuffer;
+	uint32_t _indexBufferLen;
+	uint64_t _indexOffset = 0;
+	uint64_t _vertexOffset = 0;
 };
 

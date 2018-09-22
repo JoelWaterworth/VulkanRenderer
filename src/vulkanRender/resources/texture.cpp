@@ -10,7 +10,7 @@ Texture::Texture()
 {
 }
 
-Texture * Texture::CreateCubeMap(Device * device, path p, VkFormat format)
+Texture Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 {
 	gli::texture_cube texCube(gli::load(p.string()));
 	assert(!texCube.empty());
@@ -39,7 +39,7 @@ Texture * Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 	VkSampler sampler = nullptr;
 	vkCreateSampler(device->handle(), &samplerInfo, nullptr, &sampler);
 
-	Texture* t = Texture::CreateBody(
+	Texture t = Texture::CreateBody(
 		device, { width, height },
 		format,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -59,9 +59,6 @@ Texture * Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 	vkMapMemory(device->handle(), staging.second, 0, texCube.size(), 0, &ptr);
 	memcpy(ptr, texCube.data(), texCube.size());
 	vkUnmapMemory(device->handle(), staging.second);
-//	stbi_image_free(data);
-
-	t->bSampler = true;
 
 	VkCommandBuffer copycmd;
 	VkCommandBufferBeginInfo info = {};
@@ -97,21 +94,21 @@ Texture * Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 	subresourceRange.levelCount = mipLevels;
 	subresourceRange.layerCount = 6;
 
-	t->setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
+	t.setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, subresourceRange);
 
-	vkCmdCopyBufferToImage(copycmd, staging.first, t->_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)bufferCopyRegions.size(), bufferCopyRegions.data());
+	vkCmdCopyBufferToImage(copycmd, staging.first, t._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)bufferCopyRegions.size(), bufferCopyRegions.data());
 
-	t->setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
+	t.setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
 
 	device->submitCommandBuffer(copycmd, true);
 
-	t->_descriptor = { t->_sampler, t->_imageView, VK_IMAGE_LAYOUT_GENERAL };
+	t._descriptor = { t._sampler, t._imageView, VK_IMAGE_LAYOUT_GENERAL };
 	vkDestroyBuffer(device->handle(), staging.first, nullptr);
 	vkFreeMemory(device->handle(), staging.second, nullptr);
 	return t;
 }
 
-Texture * Texture::Create(Device * device, path p, VkFormat format, uint32_t levels, uint32_t mipLevels, bool bIsCubeMap)
+Texture Texture::Create(Device * device, path p, VkFormat format, uint32_t levels, uint32_t mipLevels, bool bIsCubeMap)
 {
 	int width, height, nrChannels = 0;
 	unsigned char *data = stbi_load(p.string().c_str(), &width, &height, &nrChannels, STBI_rgb_alpha);
@@ -137,7 +134,7 @@ Texture * Texture::Create(Device * device, path p, VkFormat format, uint32_t lev
 	VkSampler sampler = nullptr;
 	vkCreateSampler(device->handle(), &samplerInfo, nullptr, &sampler);
 
-	Texture* t = Texture::CreateBody(
+	Texture t = Texture::CreateBody(
 		device, { (uint32_t)width, (uint32_t)height },
 		format,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -159,29 +156,28 @@ Texture * Texture::Create(Device * device, path p, VkFormat format, uint32_t lev
 	vkUnmapMemory(device->handle(), staging.second);
 	stbi_image_free(data);
 
-	t->bSampler = true;
 	VkCommandBuffer copycmd;
 	VkCommandBufferBeginInfo info = {};
 	info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &copycmd);
 	vkBeginCommandBuffer(copycmd, &info);
-	t->setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, t->subResource);
+	t.setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, t.subResource);
 	VkBufferImageCopy bufferImageCopy = {};
 	bufferImageCopy.imageSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 };
 	bufferImageCopy.imageExtent = { (uint32_t)width, (uint32_t)height, 1 };
-	vkCmdCopyBufferToImage(copycmd, staging.first, t->_image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)1, &bufferImageCopy);
+	vkCmdCopyBufferToImage(copycmd, staging.first, t._image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)1, &bufferImageCopy);
 
-	t->setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, t->subResource);
+	t.setImageLayout(copycmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, t.subResource);
 
 	device->submitCommandBuffer(copycmd, true);
 
-	t->_descriptor = { t->_sampler, t->_imageView, VK_IMAGE_LAYOUT_GENERAL };
+	t._descriptor = { t._sampler, t._imageView, VK_IMAGE_LAYOUT_GENERAL };
 	vkDestroyBuffer(device->handle(), staging.first, nullptr);
 	vkFreeMemory(device->handle(), staging.second, nullptr);
 	return t;
 }
 
-Texture * Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, uint32_t mipLevels, VkFormat format, bool bIsCubeMap) {
+Texture Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, uint32_t mipLevels, VkFormat format, bool bIsCubeMap) {
 	VkSamplerCreateInfo samplerInfo = {};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_NEAREST;
@@ -202,7 +198,7 @@ Texture * Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, 
 	VkSampler sampler = nullptr;
 	vkCreateSampler(device->handle(), &samplerInfo, nullptr, &sampler);
 
-	Texture* t = Texture::CreateBody(
+	Texture t = Texture::CreateBody(
 		device, { (uint32_t)dim, (uint32_t)dim },
 		format,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
@@ -217,8 +213,8 @@ Texture * Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, 
 }
 
 
-Texture* Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout, VkSampler sampler, VkMemoryPropertyFlags memoryProperties, uint32_t mipLevels, uint32_t levels, bool bIsCubeMap) {
-	Texture* texture = new Texture();
+Texture Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout, VkSampler sampler, VkMemoryPropertyFlags memoryProperties, uint32_t mipLevels, uint32_t levels, bool bIsCubeMap) {
+	Texture texture = Texture();
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -234,15 +230,14 @@ Texture* Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format,
 	if (bIsCubeMap) {
 		imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 	}
-	VK_CHECK_RESULT(vkCreateImage(device->handle(), &imageInfo, NULL, &texture->_image));
-	vkGetImageMemoryRequirements(device->handle(), texture->_image, &texture->requirments);
-	texture->size = texture->requirments.size;
-	texture->_usage = usage;
-	texture->_format = format;
-	texture->_sampler = sampler;
-	texture->_extent = extent;
-	texture->_layout = imageLayout;
-	device->attachResource(texture, memoryProperties);
+	VK_CHECK_RESULT(vkCreateImage(device->handle(), &imageInfo, NULL, &texture._image));
+	vkGetImageMemoryRequirements(device->handle(), texture._image, &texture.requirments);
+	texture.size = texture.requirments.size;
+	texture._usage = usage;
+	texture._format = format;
+	texture._sampler = sampler;
+	texture._extent = extent;
+	device->attachResource(&texture, memoryProperties);
 	VkImageAspectFlags aspect;
 	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
 		aspect = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -250,7 +245,7 @@ Texture* Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format,
 	else {
 		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	};
-	texture->subResource = {
+	texture.subResource = {
 		aspect, 0, mipLevels, 0, levels
 	};
 	VkImageViewCreateInfo viewInfo = {};
@@ -263,10 +258,10 @@ Texture* Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format,
 	}
 	viewInfo.format = format;
 	viewInfo.components = { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
-	viewInfo.subresourceRange = texture->subResource;
-	viewInfo.image = texture->_image;
-	vkCreateImageView(device->handle(), &viewInfo, nullptr, &texture->_imageView);
-	texture->_descriptor = { sampler, texture->_imageView, texture->_layout };
+	viewInfo.subresourceRange = texture.subResource;
+	viewInfo.image = texture._image;
+	vkCreateImageView(device->handle(), &viewInfo, nullptr, &texture._imageView);
+	texture._descriptor = { sampler, texture._imageView, imageLayout };
 	return texture;
 }
 
@@ -274,13 +269,13 @@ void Texture::destroy(Device * device)
 {
 	vkDestroyImage(device->handle(), _image, nullptr);
 	vkDestroyImageView(device->handle(), _imageView, nullptr);
-	if (bSampler) {
+	if (_sampler == VK_NULL_HANDLE) {
 		vkDestroySampler(device->handle(), _sampler, nullptr);
 	}
 }
 
 void Texture::copyImage(VkCommandBuffer cmd, Texture* srcTexture, uint32_t regionCount, VkImageCopy* copyRegion) {
-	vkCmdCopyImage(cmd, srcTexture->getImage(), srcTexture->getImageLayout(), _image, _layout, 1, copyRegion);
+	vkCmdCopyImage(cmd, srcTexture->getImage(), srcTexture->getImageLayout(), _image, _descriptor.imageLayout, 1, copyRegion);
 }
 
 void Texture::bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset)
@@ -302,7 +297,7 @@ void Texture::setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspect
 {
 	VkImageMemoryBarrier imageMemoryBarrier = {};
 	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	imageMemoryBarrier.oldLayout = _layout;
+	imageMemoryBarrier.oldLayout = _descriptor.imageLayout;
 	imageMemoryBarrier.newLayout = newImageLayout;
 	imageMemoryBarrier.image = _image;
 	imageMemoryBarrier.subresourceRange = subResource;
@@ -310,7 +305,7 @@ void Texture::setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspect
 	VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 	VkPipelineStageFlags destStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-	switch (_layout) {
+	switch (_descriptor.imageLayout) {
 		case VK_IMAGE_LAYOUT_UNDEFINED:
 			imageMemoryBarrier.srcAccessMask = 0;
 			break;
@@ -339,5 +334,5 @@ void Texture::setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspect
 	}
 
 	vkCmdPipelineBarrier(cmd, srcStageFlags, destStageFlags, VkDependencyFlags(), 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-	_layout = newImageLayout;
+	_descriptor.imageLayout = newImageLayout;
 }

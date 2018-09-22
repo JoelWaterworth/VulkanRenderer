@@ -11,11 +11,9 @@ RenderTarget::RenderTarget()
 {
 }
 
-RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<VkImageView>* frameBufferImageViews)
-{
-	RenderTarget* rt = new RenderTarget();
-	rt->resolution = r;
-	rt->_device = device;
+RenderTarget RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<VkImageView>* frameBufferImageViews) {
+	RenderTarget rt = RenderTarget();
+	rt._resolution = r;
 	if (attachmentCount < 2) {
 		assert("colourReq cannot be empty");
 	}
@@ -38,20 +36,19 @@ RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo*
 	samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
 	samplerInfo.unnormalizedCoordinates = 0;
 	VkSampler sampler = nullptr;
-	VK_CHECK_RESULT(vkCreateSampler(device->handle(), &samplerInfo, nullptr, &rt->sampler));
+	VK_CHECK_RESULT(vkCreateSampler(device->handle(), &samplerInfo, nullptr, &rt._sampler));
 
-	rt->attachments.resize(attachmentCount);
+	rt._attachments.resize(attachmentCount);
 	for (int i = 0; i < attachmentCount; i++) {
-		rt->attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
+		rt._attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt._sampler);
 	}
-	rt->SetUp(frameBufferImageViews);
+	rt.SetUp(device, frameBufferImageViews);
 	return rt;
 }
 
-RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<Texture*> colourAttachments, std::vector<VkImageView>* frameBufferImageViews) {
-	RenderTarget* rt = new RenderTarget();
-	rt->resolution = r;
-	rt->_device = device;
+RenderTarget RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* req, uint32_t attachmentCount, std::vector<Texture> colourAttachments, std::vector<VkImageView>* frameBufferImageViews) {
+	RenderTarget rt = RenderTarget();
+	rt._resolution = r;
 	if (attachmentCount < 2) {
 		assert("colourReq cannot be empty");
 	}
@@ -74,44 +71,41 @@ RenderTarget* RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo*
 	samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
 	samplerInfo.unnormalizedCoordinates = 0;
 	VkSampler sampler = nullptr;
-	VK_CHECK_RESULT(vkCreateSampler(device->handle(), &samplerInfo, nullptr, &rt->sampler));
+	VK_CHECK_RESULT(vkCreateSampler(device->handle(), &samplerInfo, nullptr, &rt._sampler));
 
-	rt->attachments.resize(attachmentCount);
+	rt._attachments.resize(attachmentCount);
 	for (int i = 0; i < attachmentCount; i++) {
 		if (i == (attachmentCount - 1)) {
-			rt->attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt->sampler);
+			rt._attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt._sampler);
 		}
 		else {
-			rt->attachments[i] = colourAttachments[i];
+			rt._attachments[i] = colourAttachments[i];
 		}
 	}
-	rt->SetUp(frameBufferImageViews);
+	rt.SetUp(device, frameBufferImageViews);
 	return rt;
 }
 
-void RenderTarget::SetUp(std::vector<VkImageView>* frameBufferImageViews)
-{
-	std::vector<VkAttachmentDescription> renderpassAttachments(attachments.size());
-	for (int i = 0; i < attachments.size(); i++) {
-		renderpassAttachments[i].format = attachments[i]->getFormat();
+void RenderTarget::SetUp(Device* device, std::vector<VkImageView>* frameBufferImageViews) {
+	std::vector<VkAttachmentDescription> renderpassAttachments(_attachments.size());
+	for (int i = 0; i < _attachments.size(); i++) {
+		renderpassAttachments[i].format = _attachments[i].getFormat();
 		renderpassAttachments[i].samples = VK_SAMPLE_COUNT_1_BIT;
 		renderpassAttachments[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		renderpassAttachments[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		renderpassAttachments[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		renderpassAttachments[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		renderpassAttachments[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		renderpassAttachments[i].finalLayout = attachments[i]->getImageLayout();
+		renderpassAttachments[i].finalLayout = _attachments[i].getImageLayout();
 	}
 
-	uint32_t colourAttachmentCount = attachments.size() - 1;
+	uint32_t colourAttachmentCount = _attachments.size() - 1;
 
 	std::vector<VkAttachmentReference> colorAttachmentsRef(colourAttachmentCount);
 	for (int i = 0; i < colourAttachmentCount; i++) {
 		colorAttachmentsRef[i].attachment = i;
 		colorAttachmentsRef[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	}
-
-
 
 	VkAttachmentReference depthAttachmentsRef = {};
 	depthAttachmentsRef.attachment = colourAttachmentCount;
@@ -145,63 +139,83 @@ void RenderTarget::SetUp(std::vector<VkImageView>* frameBufferImageViews)
 	deferredRenderPassCreateInfo.pSubpasses = &subpass;
 	deferredRenderPassCreateInfo.dependencyCount = 2;
 	deferredRenderPassCreateInfo.pDependencies = dependencies;
-	VK_CHECK_RESULT(vkCreateRenderPass(_device->handle(), &deferredRenderPassCreateInfo, nullptr, &this->renderPass));
+	VK_CHECK_RESULT(vkCreateRenderPass(device->handle(), &deferredRenderPassCreateInfo, nullptr, &this->_renderPass));
 
 	if (frameBufferImageViews) {
 		for (auto& present_image_view : *frameBufferImageViews) {
-			VkImageView framebufferAttachments[2] = { present_image_view, attachments[attachments.size()-1]->getImageView() };
+			VkImageView framebufferAttachments[2] = { present_image_view, _attachments[_attachments.size()-1].getImageView() };
 			VkFramebufferCreateInfo frameBufferCreateInfo = {};
 			frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			frameBufferCreateInfo.renderPass = renderPass;
+			frameBufferCreateInfo.renderPass = _renderPass;
 			frameBufferCreateInfo.attachmentCount = 2;
 			frameBufferCreateInfo.pAttachments = framebufferAttachments;
-			frameBufferCreateInfo.width = resolution.width;
-			frameBufferCreateInfo.height = resolution.height;
+			frameBufferCreateInfo.width = _resolution.width;
+			frameBufferCreateInfo.height = _resolution.height;
 			frameBufferCreateInfo.layers = 1;
 			VkFramebuffer frame = nullptr;
-			vkCreateFramebuffer(_device->handle(), &frameBufferCreateInfo, NULL, &frame);
-			this->framebuffers.push_back(frame);
+			vkCreateFramebuffer(device->handle(), &frameBufferCreateInfo, NULL, &frame);
+			this->_framebuffers.push_back(frame);
 		}
 	} else {
-		std::vector<VkImageView> attachmentsViews(attachments.size());
+		std::vector<VkImageView> attachmentsViews(_attachments.size());
 		for (int i = 0; i < attachmentsViews.size(); i++) {
-			attachmentsViews[i] = attachments[i]->getImageView();
+			attachmentsViews[i] = _attachments[i].getImageView();
 		}
 
 		VkFramebufferCreateInfo frameBufferCreateInfo = {};
 		frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		frameBufferCreateInfo.renderPass = renderPass;
+		frameBufferCreateInfo.renderPass = _renderPass;
 		frameBufferCreateInfo.attachmentCount = attachmentsViews.size();
 		frameBufferCreateInfo.pAttachments = attachmentsViews.data();
-		frameBufferCreateInfo.width = resolution.width;
-		frameBufferCreateInfo.height = resolution.height;
+		frameBufferCreateInfo.width = _resolution.width;
+		frameBufferCreateInfo.height = _resolution.height;
 		frameBufferCreateInfo.layers = 1;
-		VkFramebuffer frame = nullptr;
-		vkCreateFramebuffer(_device->handle(), &frameBufferCreateInfo, NULL, &frame);
-		this->framebuffers.push_back(frame);
+		VkFramebuffer frame = VK_NULL_HANDLE;
+		vkCreateFramebuffer(device->handle(), &frameBufferCreateInfo, NULL, &frame);
+		this->_framebuffers.push_back(frame);
 	}
 }
 
-RenderTarget* RenderTarget::CreateFromTextures(Device * device, std::vector<Texture*> attachments, std::vector<VkImageView>* frameBufferImageViews)
-{
-	RenderTarget* rt = new RenderTarget();
-	rt->resolution = attachments[0]->getResloution();
-	rt->_device = device;
-	rt->attachments = attachments;
-	rt->SetUp(frameBufferImageViews);
+void RenderTarget::destroy(Device * device) {
+	for (VkFramebuffer framebuffer : _framebuffers) {
+		vkDestroyFramebuffer(device->handle(), framebuffer, nullptr);
+	}
+
+	vkDestroyRenderPass(device->handle(), _renderPass, nullptr);
+	if (_sampler == VK_NULL_HANDLE) {
+		vkDestroySampler(device->handle(), _sampler, nullptr);
+	}
+
+	for (auto attachment : _attachments) {
+		attachment.destroy(device);
+	}
+}
+
+std::vector<Texture> RenderTarget::takeAttachments(Device * device, std::vector<uint8_t> indices) {
+	std::vector<Texture> textures = std::vector<Texture>();
+	for (uint8_t index : indices) {
+		_attachments[index]._sampler = _sampler;
+		textures.push_back(_attachments[index]);
+		_attachments.erase(_attachments.begin() + index);
+	}
+	_sampler = VK_NULL_HANDLE;
+	destroy(device);
+	return textures;
+}
+
+Texture RenderTarget::takeAttachment(Device * device, uint8_t index) {
+	Texture texture = _attachments[index];
+	_attachments.erase(_attachments.begin() + index);
+	texture._sampler = _sampler;
+	_sampler = VK_NULL_HANDLE;
+	destroy(device);
+	return texture;
+}
+
+RenderTarget RenderTarget::CreateFromTextures(Device * device, std::vector<Texture> attachments, std::vector<VkImageView>* frameBufferImageViews) {
+	RenderTarget rt = RenderTarget();
+	rt._resolution = attachments[0].getResloution();
+	rt._attachments = attachments;
+	rt.SetUp(device, frameBufferImageViews);
 	return rt;
-}
-
-RenderTarget::~RenderTarget() {
-	for (VkFramebuffer framebuffer : framebuffers) {
-		vkDestroyFramebuffer(_device->handle(), framebuffer, nullptr);
-	}
-
-	vkDestroyRenderPass(_device->handle(), renderPass, nullptr);
-	vkDestroySampler(_device->handle(), sampler, nullptr);
-
-	for (auto attachment : attachments) {
-		attachment->destroy(_device);
-		delete attachment;
-	}
 }

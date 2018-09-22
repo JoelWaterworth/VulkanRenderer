@@ -2,8 +2,6 @@
 #include <iostream>
 #include <string>
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-
 int main()
 {
 	Engine();

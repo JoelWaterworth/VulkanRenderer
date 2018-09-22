@@ -22,21 +22,13 @@ public:
 	{}
 	~Device();
 	void deallocateAll();
-	VkPhysicalDeviceMemoryProperties memoryProperties;
-	VkPhysicalDeviceProperties _deviceProperties;
 
 	uint32_t getMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr);
 
 	std::pair<VkBuffer, VkDeviceMemory> allocateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
 	void attachResource(Resource * resource, VkMemoryPropertyFlags requirementsMask);
-	bool debugMarkerActive = false;
-	Block* allocateBlock(uint32_t typeBit);
-
-	VkCommandPool _commandPool;
-	uint32_t graphicsQueueFamilyIndex;
-	uint32_t queueFamilyCount;
-	VkPhysicalDevice _gpu = nullptr;
+	
 	inline VkQueue getGraphicsQueue() const	{ return graphicsQueue; };
 	inline VkQueue getPresentQueue() const	{ return presentQueue; };
 	inline VkDevice handle() const { return _d; };
@@ -51,6 +43,18 @@ public:
 	void beginRegion(VkCommandBuffer cmdbuffer, const char* pMarkerName, glm::vec4 color);
 	void insert(VkCommandBuffer cmdbuffer, const char* pMarkerName, glm::vec4 color);
 	void endRegion(VkCommandBuffer cmdbuffer);
+
+private:
+	Block* allocateBlock(uint32_t typeBit);
+
+public:
+	VkCommandPool _commandPool;
+	uint32_t graphicsQueueFamilyIndex;
+	uint32_t queueFamilyCount;
+	VkPhysicalDeviceMemoryProperties memoryProperties;
+	VkPhysicalDeviceProperties _deviceProperties;
+	VkPhysicalDevice _gpu = nullptr;
+	bool debugMarkerActive = false;
 
 private:
 	VkDevice _d = VK_NULL_HANDLE;

@@ -137,7 +137,7 @@ void Device::setUpmarkers()
 		cmdDebugMarkerEnd			= (PFN_vkCmdDebugMarkerEndEXT)vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerEndEXT");
 		cmdDebugMarkerInsert		= (PFN_vkCmdDebugMarkerInsertEXT)vkGetDeviceProcAddr(_d, "vkCmdDebugMarkerInsertEXT");
 		debugMarkerActive = (vkDebugMarkerSetObjectName != VK_NULL_HANDLE);
-		debugMarkerActive = false; // vkDebugFunctions are not working because of vulkan libary
+		//debugMarkerActive = false; // vkDebugFunctions are not working because of vulkan libary
 		if (!debugMarkerActive) {
 			std::cout << "debugMarker not active" << std::endl;
 		}

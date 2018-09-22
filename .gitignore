@@ -14,3 +14,7 @@ CMakeCache.txt
 *.filters
 *.sln
 *.spv
+*.user
+*.spv
+*.spv
+*.exe

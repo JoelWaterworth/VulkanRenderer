@@ -96,20 +96,20 @@ private:
 	uint8_t _frameIndex = 0;
 	uint32_t currentBuffer = 0;
 
-	Texture* _environmentCube = nullptr;
-	Texture* _lutBrdf = nullptr;
-	Texture* _irradianceCube = nullptr;
-	Texture* _prefilteredCube = nullptr;
+	Texture _environmentCube;
+	Texture _lutBrdf;
+	Texture _irradianceCube;
+	Texture _prefilteredCube;
 
-	Texture* _baseColour = nullptr;
-	Texture* _normal = nullptr;
-	Texture* _roughness = nullptr;
-	Texture* _metallic = nullptr;
-	Texture* _ao = nullptr;
+	Texture _baseColour;
+	Texture _normal;
+	Texture _roughness;
+	Texture _metallic;
+	Texture _ao;
 
-	Mesh* _monkey = nullptr;
-	Mesh* _plane = nullptr;
-	Mesh* _box = nullptr;
+	Mesh _monkey;
+	Mesh _plane;
+	Mesh _box;
 	 
 	Shader* _presentShader = nullptr;
 	Shader* _deferredShader = nullptr;
@@ -128,8 +128,8 @@ private:
 	SurfaceCapabilities capabilities;
 	CameraMat _cameraMat = {};
 	VkSurfaceKHR surface = nullptr;
-	RenderTarget* PresentRenderTarget = nullptr;
-	RenderTarget* DeferredRenderTarget = nullptr;
+	RenderTarget PresentRenderTarget;
+	RenderTarget DeferredRenderTarget;
 	struct {
 		VkSwapchainKHR handle;
 		std::vector<VkImage> images;

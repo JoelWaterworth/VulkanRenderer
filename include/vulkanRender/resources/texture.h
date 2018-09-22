@@ -11,13 +11,13 @@ class Texture : public Resource, public UniformInterface
 public:
 	Texture();
 
-	static Texture* CreateCubeMap(
+	static Texture CreateCubeMap(
 		Device* device,
 		path p,
 		VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT
 	);
 
-	static Texture* Create(
+	static Texture Create(
 		Device* device,
 		path p,
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
@@ -25,7 +25,7 @@ public:
 		uint32_t levels = 1,
 		bool bIsCubeMap = false
 		);
-	static Texture* CreateFromDim(
+	static Texture CreateFromDim(
 		Device* device,
 		int32_t dim,
 		uint32_t mipLevels = 1,
@@ -33,7 +33,7 @@ public:
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM,
 		bool bIsCubeMap = false
 	);
-	static Texture* CreateBody(
+	static Texture CreateBody(
 		Device* device,
 		VkExtent2D extent,
 		VkFormat format = VK_FORMAT_R16G16B16_SFLOAT,
@@ -44,27 +44,29 @@ public:
 		uint32_t mipLevels = 1,
 		uint32_t levels = 1,
 		bool bIsCubeMap = false);
+
+	VkSampler _sampler = VK_NULL_HANDLE;
+
+private:
+	VkImage _image = nullptr;
+	VkImageView _imageView = nullptr;
+	VkImageUsageFlags _usage;
+	VkFormat _format;
+	VkExtent2D _extent;
+	VkDescriptorImageInfo _descriptor;
+	VkImageSubresourceRange subResource;
+
+public:
 	virtual void destroy(Device* device);
 	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
 	void copyImage(VkCommandBuffer cmd, Texture* srcTexture, uint32_t regionCount, VkImageCopy* copyRegion);
 	inline VkImageView getImageView() const { return _imageView; }
 	inline VkImage getImage() const { return _image; }
 	inline VkFormat getFormat() const { return _format; }
-	inline VkImageLayout getImageLayout() const { return _layout; }
+	inline VkImageLayout getImageLayout() const { return _descriptor.imageLayout; }
 	inline VkExtent2D getResloution() const { return _extent; }
+	inline VkImageSubresourceRange getSubResource() const { return subResource; }
 	virtual VkDescriptorType getDescriptorType();
 	virtual VkDescriptorImageInfo* getImageInfo();
 	void setImageLayout(VkCommandBuffer cmd, VkImageAspectFlags ImageAspects, VkImageLayout newImageLayout, VkImageSubresourceRange subResource);
-
-private:
-	bool bSampler = false;
-	VkImage _image = nullptr;
-	VkImageView _imageView = nullptr;
-	VkSampler _sampler = nullptr;
-	VkImageUsageFlags _usage;
-	VkFormat _format;
-	VkExtent2D _extent;
-	VkImageLayout _layout;
-	VkDescriptorImageInfo _descriptor;
-	VkImageSubresourceRange subResource;
 };
