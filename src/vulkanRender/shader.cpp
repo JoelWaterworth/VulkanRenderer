@@ -4,6 +4,18 @@
 #include <stdio.h>
 #include <fstream>
 
+void Shader::destroy(Device * device)
+{
+	vkDestroyPipeline(device->handle(), _pipeline, nullptr);
+	if (_pipelineCache != VK_NULL_HANDLE) {
+		vkDestroyPipelineCache(device->handle(), _pipelineCache, nullptr);
+	}
+	vkDestroyPipelineLayout(device->handle(), _pipelineLayout, nullptr);
+	for (auto& des : _desSetLayouts) {
+		vkDestroyDescriptorSetLayout(device->handle(), des, nullptr);
+	}
+}
+
 std::pair<char *, size_t> Shader::compile(path shader) {
 	path spv_path = shader;
 	std::string filename = shader.filename().string();
@@ -33,8 +45,7 @@ std::pair<char *, size_t> Shader::compile(path shader) {
 	return std::make_pair((char *)shader_code, size);
 }
 
-VkShaderModule Shader::createShaderModule(Device* device, const void * code, size_t size)
-{
+VkShaderModule Shader::createShaderModule(Device* device, const void * code, size_t size){
 	VkShaderModuleCreateInfo moduleCreateInfo = {};
 	moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	moduleCreateInfo.codeSize = size;
@@ -47,8 +58,7 @@ VkShaderModule Shader::createShaderModule(Device* device, const void * code, siz
 	return module;
 }
 
-pair<VkShaderModule, VkPipelineShaderStageCreateInfo> Shader::createPipelineStageInfo(Device* device, path shader, VkShaderStageFlagBits stage)
-{
+pair<VkShaderModule, VkPipelineShaderStageCreateInfo> Shader::createPipelineStageInfo(Device* device, path shader, VkShaderStageFlagBits stage){
 	std::pair<char *, size_t> s = compile(shader);
 	VkShaderModule Module = Shader::createShaderModule(device, s.first, s.second);
 	VkPipelineShaderStageCreateInfo pipelineStageInfo = {};
@@ -59,7 +69,7 @@ pair<VkShaderModule, VkPipelineShaderStageCreateInfo> Shader::createPipelineStag
 	return make_pair(Module, pipelineStageInfo);
 }
 
-Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts, bool bIsDisableVertexDescriptor)
+Shader Shader::Create(Device * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts, bool bIsDisableVertexDescriptor)
 {
 	pair<VkShaderModule, VkPipelineShaderStageCreateInfo> vertRes =
 		Shader::createPipelineStageInfo(device, vertPath, VK_SHADER_STAGE_VERTEX_BIT);
@@ -269,29 +279,15 @@ Shader* Shader::Create(Device * device, RenderTarget* renderTarget, path vertPat
 
 	vkDestroyShaderModule(device->handle(), vertRes.first, nullptr);
 	vkDestroyShaderModule(device->handle(), fragRes.first, nullptr);
-	auto shader = new Shader();
-	shader->_device = device;
-	shader->_pipeline = pipline;
-	shader->_pipelineLayout = pipelineLayout;
-	shader->_pipelineCache = pipelineCache;
-	shader->_desSetLayouts = descLayouts;
-	shader->_shaderLayout = layout2D;
-	shader->_descriptorCount = descriptorCount;
+	auto shader = Shader();
+	shader._pipeline = pipline;
+	shader._pipelineLayout = pipelineLayout;
+	shader._pipelineCache = pipelineCache;
+	shader._desSetLayouts = descLayouts;
+	shader._shaderLayout = layout2D;
+	shader._descriptorCount = descriptorCount;
 	return shader;
 }
 
 Shader::Shader()
 {}
-
-
-Shader::~Shader()
-{
-	vkDestroyPipeline(_device->handle(), _pipeline, nullptr);
-	if (_pipelineCache != VK_NULL_HANDLE) {
-		vkDestroyPipelineCache(_device->handle(), _pipelineCache, nullptr);
-	}
-	vkDestroyPipelineLayout(_device->handle(), _pipelineLayout, nullptr);
-	for (auto& des : _desSetLayouts) {
-		vkDestroyDescriptorSetLayout(_device->handle(), des, nullptr);
-	}
-}

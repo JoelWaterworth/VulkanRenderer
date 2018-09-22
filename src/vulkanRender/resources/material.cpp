@@ -18,6 +18,7 @@ Material::~Material()
 
 void Material::destroy(Device * device)
 {
+	//vkFreeDescriptorSets(device->handle(), _descriptorPool, _descriptorSets.size(), _descriptorSets.data());
 	vkDestroyDescriptorPool(device->handle(), _descriptorPool, nullptr);
 }
 

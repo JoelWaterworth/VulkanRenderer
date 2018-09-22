@@ -36,9 +36,8 @@ struct ShaderLayout {
 class Shader
 {
 public:
-	static Shader* Create(Device* device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts = std::vector<VkPushConstantRange>(), bool bIsDisableVertexDescriptor = false);
+	static Shader Create(Device* device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts = std::vector<VkPushConstantRange>(), bool bIsDisableVertexDescriptor = false);
 	Shader();
-	~Shader();
 
 	vector<VkDescriptorSetLayout> _desSetLayouts;
 
@@ -48,9 +47,10 @@ public:
 	inline vector<VkDescriptorSetLayout> getDesSetLayout() const { return _desSetLayouts; }
 	inline vector<vector<ShaderLayout>> getShaderLayout() const { return _shaderLayout; }
 
+	void destroy(Device* device);
+
 private:
 	uint8_t _descriptorCount;
-	Device* _device;
 	VkPipeline _pipeline = VK_NULL_HANDLE;
 	VkPipelineLayout _pipelineLayout = VK_NULL_HANDLE;
 	VkPipelineCache _pipelineCache = VK_NULL_HANDLE;
@@ -59,6 +59,5 @@ private:
 	static pair<char *, size_t> compile(path shader);
 	static VkShaderModule createShaderModule(Device* device, const void *code, size_t size);
 	static pair<VkShaderModule, VkPipelineShaderStageCreateInfo> createPipelineStageInfo(Device* device, path shader, VkShaderStageFlagBits stage);
-
 };
 

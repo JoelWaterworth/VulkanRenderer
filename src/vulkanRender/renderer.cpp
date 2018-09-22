@@ -57,8 +57,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL vulkanDebugCallback(
 	return false;
 }
 
-Renderer::Renderer()
-{
+Renderer::Renderer() {
 }
 
 Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, bool bwDebugReport) {
@@ -220,9 +219,9 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	//_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
 	printf("Create _presentMaterial\n");
-	_cameraDescriptor = Material::CreateMaterialWithShader(_device, _presentShader, cameraUniforms, 0, false);
-	_positions = Material::CreateMaterialWithShader(_device, _presentShader, posUniforms, 1, false, _matPostion.getAlign());
-	_skyboxDescriptor = Material::CreateMaterialWithShader(_device, _skyboxShader, skyUniform, 0, false);
+	_cameraDescriptor = Material::CreateMaterialWithShader(_device, &_presentShader, cameraUniforms, 0, false);
+	_positions = Material::CreateMaterialWithShader(_device, &_presentShader, posUniforms, 1, false, _matPostion.getAlign());
+	_skyboxDescriptor = Material::CreateMaterialWithShader(_device, &_skyboxShader, skyUniform, 0, false);
 	//_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
@@ -315,10 +314,11 @@ void Renderer::destroy()
 	delete _lights;
 	_positions.destroy(_device);
 	_cameraDescriptor.destroy(_device);
-	//_presentMaterial.destroy(_device);
+	_skyboxDescriptor.destroy(_device);
 //	_deferredMaterial.destroy(_device);
 	
-	delete _presentShader;
+	_presentShader.destroy(_device);
+	_skyboxShader.destroy(_device);
 //	delete _deferredShader;
 
 	_monkey.destroy(_device);
@@ -552,7 +552,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 	_device->beginRegion(commandBuffer, text.c_str(), glm::vec4({ 1.0f, 0.0f, 0.0f, 1.0f }));
 
 	vkCmdBeginRenderPass(commandBuffer, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader->GetPipeline());
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _presentShader.GetPipeline());
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
 	viewport.width = resolution.width;
@@ -563,12 +563,12 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 	VkRect2D scissor = {};
 	scissor.extent = resolution;
 
-	_cameraDescriptor.makeCurrent(commandBuffer, _presentShader);
+	_cameraDescriptor.makeCurrent(commandBuffer, &_presentShader);
 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 	_monkey.bind(commandBuffer);
 	for (int i = 0; i < 25; i++) {
-		_positions.makeCurrentAlign(commandBuffer, i, _presentShader);
+		_positions.makeCurrentAlign(commandBuffer, i, &_presentShader);
 		_monkey.draw(commandBuffer);
 	}
 	/*
@@ -618,8 +618,8 @@ void Renderer::BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world)
 	_device->beginRegion(cmd, "OffscreenCommandBuffer", glm::vec4({ 1.0f, 0.0f, 0.0f, 1.0f }));
 
 	vkCmdBeginRenderPass(cmd, &passInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader->GetPipeline());
-	_cameraDescriptor.makeCurrent(cmd, _deferredShader);
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _deferredShader.GetPipeline());
+	_cameraDescriptor.makeCurrent(cmd, &_deferredShader);
 	
 	VkViewport viewport = {};
 	viewport.height = resolution.height;
@@ -635,7 +635,7 @@ void Renderer::BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world)
 	_monkey.bind(cmd);
 	_deferredMaterial.makeCurrent(cmd);
 	for (int i = 0; i < 25; i++) {
-		_positions.makeCurrentAlign(cmd, i, _deferredShader);
+		_positions.makeCurrentAlign(cmd, i, &_deferredShader);
 		_monkey.draw(cmd);
 	}
 	
@@ -654,7 +654,7 @@ void Renderer::generateBRDFLUT() {
 
 	RenderTarget renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
 	
-	Shader* _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/passThrough.vert"), path("assets/shaders/genbrdflut.frag"), std::vector<ShaderLayout>());
+	Shader _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/passThrough.vert"), path("assets/shaders/genbrdflut.frag"), std::vector<ShaderLayout>());
 
 	VkCommandBuffer cmd = VK_NULL_HANDLE;
 	_device->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, 1, &cmd);
@@ -684,7 +684,7 @@ void Renderer::generateBRDFLUT() {
 	VkRect2D scissor = { 0, 0, dim, dim };
 	vkCmdSetViewport(cmd, 0, 1, &viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut.GetPipeline());
 	_plane.bind(cmd);
 	_plane.draw(cmd);
 	vkCmdEndRenderPass(cmd);
@@ -696,6 +696,7 @@ void Renderer::generateBRDFLUT() {
 //	_lutBrdf.setImageLayout(cmd, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, subresourceRange);
 	_device->submitCommandBuffer(cmd, true);
 	_lutBrdf = renderTarget.takeAttachment(_device, 0);
+	_genBRDflut.destroy(_device);
 }
 
 void Renderer::generateIrradianceCube()
@@ -736,9 +737,9 @@ void Renderer::generateIrradianceCube()
 	std::vector<ShaderLayout> layout;
 	layout.push_back(ShaderLayout(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 0));
 
-	Shader* _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/irradiancecube.frag"), layout, layoutConts);
+	Shader _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/irradiancecube.frag"), layout, layoutConts);
 
-	Material material = Material::CreateMaterialWithShader(_device, _genBRDflut, bindings);
+	Material material = Material::CreateMaterialWithShader(_device, &_genBRDflut, bindings);
 
 	std::vector<glm::mat4> matrices = {
 		// POSITIVE_X
@@ -798,8 +799,8 @@ void Renderer::generateIrradianceCube()
 			vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdPushConstants(cmd, _genBRDflut->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
-			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
+			vkCmdPushConstants(cmd, _genBRDflut.GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
+			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut.GetPipeline());
 			material.makeCurrent(cmd);
 			_box.bind(cmd);
 
@@ -843,6 +844,8 @@ void Renderer::generateIrradianceCube()
 	_device->submitCommandBuffer(cmd, true);
 
 	renderTarget.destroy(_device);
+	material.destroy(_device);
+	_genBRDflut.destroy(_device);
 }
 
 void Renderer::generatePrefilteredCube()
@@ -876,7 +879,7 @@ void Renderer::generatePrefilteredCube()
 	push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutConts.push_back(push);
 	RenderTarget renderTarget = RenderTarget::Create(_device, { dim, dim }, req.data(), req.size());
-	Shader* _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/prefilterenvmap.frag"), layout, layoutConts);
+	Shader _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/prefilterenvmap.frag"), layout, layoutConts);
 
 
 	PushBlock block = {};
@@ -886,7 +889,7 @@ void Renderer::generatePrefilteredCube()
 		UniformBinding(&_environmentCube, 0)
 	};
 
-	Material material = Material::CreateMaterialWithShader(_device, _genBRDflut, bindings);
+	Material material = Material::CreateMaterialWithShader(_device, &_genBRDflut, bindings);
 
 	std::vector<glm::mat4> matrices = {
 		// POSITIVE_X
@@ -947,8 +950,8 @@ void Renderer::generatePrefilteredCube()
 			vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdPushConstants(cmd, _genBRDflut->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
-			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut->GetPipeline());
+			vkCmdPushConstants(cmd, _genBRDflut.GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
+			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut.GetPipeline());
 			material.makeCurrent(cmd);
 			_box.bind(cmd);
 
@@ -996,4 +999,6 @@ void Renderer::generatePrefilteredCube()
 	std::cout << "Generating pre-filtered enivornment cube with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
 
 	renderTarget.destroy(_device);
+	material.destroy(_device);
+	_genBRDflut.destroy(_device);
 }

@@ -111,14 +111,16 @@ private:
 	Mesh _plane;
 	Mesh _box;
 	 
-	Shader* _presentShader = nullptr;
-	Shader* _deferredShader = nullptr;
-	Shader* _skyboxShader = nullptr;
+	Shader _presentShader;
+	Shader _deferredShader;
+	Shader _skyboxShader;
+
 	Material _cameraDescriptor;
 	Material _positions;
 	Material _skyboxDescriptor;
 	Material _presentMaterial;
 	Material _deferredMaterial;
+
 	UniformInterface* _unfirom = nullptr;
 	UniformBuffer* _cameraSpace;
 	UniformDynamicBuffer _matPostion;
