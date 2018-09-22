@@ -172,7 +172,7 @@ void RenderTarget::SetUp(Device* device, std::vector<VkImageView>* frameBufferIm
 		frameBufferCreateInfo.layers = 1;
 		VkFramebuffer frame = VK_NULL_HANDLE;
 		vkCreateFramebuffer(device->handle(), &frameBufferCreateInfo, NULL, &frame);
-		this->_framebuffers.push_back(frame);
+		_framebuffers.push_back(frame);
 	}
 }
 
