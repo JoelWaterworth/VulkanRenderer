@@ -122,9 +122,10 @@ private:
 	Material _deferredMaterial;
 
 	UniformInterface* _unfirom = nullptr;
-	UniformBuffer* _cameraSpace;
+	UniformBuffer _cameraSpace;
 	UniformDynamicBuffer _matPostion;
-	UniformBuffer* _lights = nullptr;
+	UniformBuffer _lights;
+
 	VkInstance instance = nullptr;
 	Device* _device = nullptr;
 	SurfaceCapabilities capabilities;

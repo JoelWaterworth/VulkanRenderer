@@ -45,6 +45,7 @@ Texture Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		sampler,
+		true,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		mipLevels,
 		6,
@@ -102,7 +103,7 @@ Texture Texture::CreateCubeMap(Device * device, path p, VkFormat format)
 
 	device->submitCommandBuffer(copycmd, true);
 
-	t._descriptor = { t._sampler, t._imageView, VK_IMAGE_LAYOUT_GENERAL };
+	t._descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	vkDestroyBuffer(device->handle(), staging.first, nullptr);
 	vkFreeMemory(device->handle(), staging.second, nullptr);
 	return t;
@@ -140,6 +141,7 @@ Texture Texture::Create(Device * device, path p, VkFormat format, uint32_t level
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		sampler,
+		true,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		mipLevels,
 		levels,
@@ -171,7 +173,7 @@ Texture Texture::Create(Device * device, path p, VkFormat format, uint32_t level
 
 	device->submitCommandBuffer(copycmd, true);
 
-	t._descriptor = { t._sampler, t._imageView, VK_IMAGE_LAYOUT_GENERAL };
+	t._descriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 	vkDestroyBuffer(device->handle(), staging.first, nullptr);
 	vkFreeMemory(device->handle(), staging.second, nullptr);
 	return t;
@@ -204,6 +206,7 @@ Texture Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, ui
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 		VK_IMAGE_LAYOUT_UNDEFINED,
 		sampler,
+		true,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		mipLevels,
 		levels,
@@ -213,7 +216,7 @@ Texture Texture::CreateFromDim(Device * device, int32_t dim, uint32_t levels, ui
 }
 
 
-Texture Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout, VkSampler sampler, VkMemoryPropertyFlags memoryProperties, uint32_t mipLevels, uint32_t levels, bool bIsCubeMap) {
+Texture Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format, VkImageUsageFlags usage, VkImageLayout imageLayout, VkSampler sampler, bool bisSamplerOwned, VkMemoryPropertyFlags memoryProperties, uint32_t mipLevels, uint32_t levels, bool bIsCubeMap) {
 	Texture texture = Texture();
 	VkImageCreateInfo imageInfo = {};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -235,8 +238,8 @@ Texture Texture::CreateBody(Device* device, VkExtent2D extent, VkFormat format, 
 	texture.size = texture.requirments.size;
 	texture._usage = usage;
 	texture._format = format;
-	texture._sampler = sampler;
 	texture._extent = extent;
+	texture.bIsSamplerOwned = bisSamplerOwned;
 	device->attachResource(&texture, memoryProperties);
 	VkImageAspectFlags aspect;
 	if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
@@ -269,8 +272,8 @@ void Texture::destroy(Device * device)
 {
 	vkDestroyImage(device->handle(), _image, nullptr);
 	vkDestroyImageView(device->handle(), _imageView, nullptr);
-	if (_sampler == VK_NULL_HANDLE) {
-		vkDestroySampler(device->handle(), _sampler, nullptr);
+	if (bIsSamplerOwned) {
+		vkDestroySampler(device->handle(), getSampler(), nullptr);
 	}
 }
 

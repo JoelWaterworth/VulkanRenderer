@@ -40,7 +40,7 @@ RenderTarget RenderTarget::Create(Device* device, VkExtent2D r, AttachmentInfo* 
 
 	rt._attachments.resize(attachmentCount);
 	for (int i = 0; i < attachmentCount; i++) {
-		rt._attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt._sampler);
+		rt._attachments[i] = Texture::CreateBody(device, r, req[i].format, req[i].usage, req[i].imageLayout, rt._sampler, false);
 	}
 	rt.SetUp(device, frameBufferImageViews);
 	return rt;
@@ -182,7 +182,7 @@ void RenderTarget::destroy(Device * device) {
 	}
 
 	vkDestroyRenderPass(device->handle(), _renderPass, nullptr);
-	if (_sampler == VK_NULL_HANDLE) {
+	if (_sampler != VK_NULL_HANDLE) {
 		vkDestroySampler(device->handle(), _sampler, nullptr);
 	}
 
@@ -194,7 +194,7 @@ void RenderTarget::destroy(Device * device) {
 std::vector<Texture> RenderTarget::takeAttachments(Device * device, std::vector<uint8_t> indices) {
 	std::vector<Texture> textures = std::vector<Texture>();
 	for (uint8_t index : indices) {
-		_attachments[index]._sampler = _sampler;
+		_attachments[index].bIsSamplerOwned = true;
 		textures.push_back(_attachments[index]);
 		_attachments.erase(_attachments.begin() + index);
 	}
@@ -206,7 +206,7 @@ std::vector<Texture> RenderTarget::takeAttachments(Device * device, std::vector<
 Texture RenderTarget::takeAttachment(Device * device, uint8_t index) {
 	Texture texture = _attachments[index];
 	_attachments.erase(_attachments.begin() + index);
-	texture._sampler = _sampler;
+	texture.bIsSamplerOwned = true;
 	_sampler = VK_NULL_HANDLE;
 	destroy(device);
 	return texture;

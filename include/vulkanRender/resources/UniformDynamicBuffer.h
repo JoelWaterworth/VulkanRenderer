@@ -13,11 +13,10 @@ class UniformDynamicBuffer : public UniformInterface, public Resource
 public:
 	UniformDynamicBuffer(Device * device, size_t size, uint32_t num, const void* data);
 	UniformDynamicBuffer();
-	virtual ~UniformDynamicBuffer();
 
 	template <class T>
 	static UniformDynamicBuffer Create(Device* device, vector<T> data);
-
+	void destroy(Device* device);
 	void flushMemory(Device * device, void* alignedAlloc);
 
 	virtual VkDescriptorType getDescriptorType();
@@ -30,7 +29,6 @@ private:
 	VkBuffer _buffer = nullptr;
 	VkDeviceSize _align = 0;
 	VkDeviceSize _bufferSize = 0;
-	Device* _device = nullptr;
 };
 
 template<class T>

@@ -167,7 +167,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	generatePrefilteredCube();
 
 	std::vector<UniformBinding> cameraUniforms = { 
-		UniformBinding(_cameraSpace,  0, 0),
+		UniformBinding(&_cameraSpace,  0, 0),
 		UniformBinding(&_irradianceCube,  1, 0),
 		UniformBinding(&_lutBrdf,  2, 0),
 		UniformBinding(&_prefilteredCube,  3, 0),
@@ -213,7 +213,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	_lights = UniformBuffer::CreateUniformBuffer(_device, lights);
 
 	std::vector<UniformBinding> skyUniform = {
-		UniformBinding(_cameraSpace,  0, 0),
+		UniformBinding(&_cameraSpace,  0, 0),
 		UniformBinding(&_environmentCube,  1, 0),
 	};
 
@@ -311,8 +311,10 @@ void Renderer::destroy()
 	_irradianceCube.destroy(_device);
 	_prefilteredCube.destroy(_device);
 
-	delete _lights;
+	_lights.destroy(_device);
+	_cameraSpace.destroy(_device);
 	_positions.destroy(_device);
+	_matPostion.destroy(_device);
 	_cameraDescriptor.destroy(_device);
 	_skyboxDescriptor.destroy(_device);
 //	_deferredMaterial.destroy(_device);
@@ -523,7 +525,7 @@ void Renderer::BuildPresentCommandBuffer(VkCommandBuffer commandBuffer, World* w
 	_cameraMat.gamma = camera.gamma;
 	_cameraMat.exposure = camera.exposure;
 
-	_cameraSpace->update(_device, &_cameraMat);
+	_cameraSpace.update(_device, &_cameraMat);
 
 	VkCommandBufferBeginInfo commandInfo = {};
 	commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -588,7 +590,7 @@ void Renderer::BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world)
 	Camera camera = world->getCamera();
 	CameraMat cameraMat = {};
 	cameraMat.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), camera.transform.loction);
-	_cameraSpace->update(_device, &cameraMat);
+	_cameraSpace.update(_device, &cameraMat);
 	VkCommandBufferBeginInfo commandInfo = {};
 	commandInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	commandInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -729,7 +731,7 @@ void Renderer::generateIrradianceCube()
 	push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutConts.push_back(push);
 
-	UniformBuffer* blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
+	UniformBuffer blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
 	vector<UniformBinding> bindings = {
 		UniformBinding(&_environmentCube, 0)
 	};
@@ -795,7 +797,7 @@ void Renderer::generateIrradianceCube()
 
 		for (uint32_t f = 0; f < 6; f++) {
 			pushBlock.mvp = glm::perspective((float)(M_PI / 2.0), 1.0f, 0.1f, 512.0f) * matrices[f];
-			blockBinding->update(_device, &pushBlock);
+			blockBinding.update(_device, &pushBlock);
 			vkCmdSetViewport(cmd, 0, 1, &viewport);
 
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -844,6 +846,7 @@ void Renderer::generateIrradianceCube()
 	_device->submitCommandBuffer(cmd, true);
 
 	renderTarget.destroy(_device);
+	blockBinding.destroy(_device);
 	material.destroy(_device);
 	_genBRDflut.destroy(_device);
 }
@@ -884,7 +887,7 @@ void Renderer::generatePrefilteredCube()
 
 	PushBlock block = {};
 
-	UniformBuffer* blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
+	UniformBuffer blockBinding = UniformBuffer::CreateUniformBuffer(_device, block);
 	vector<UniformBinding> bindings = {
 		UniformBinding(&_environmentCube, 0)
 	};
@@ -999,6 +1002,7 @@ void Renderer::generatePrefilteredCube()
 	std::cout << "Generating pre-filtered enivornment cube with " << numMips << " mip levels took " << tDiff << " ms" << std::endl;
 
 	renderTarget.destroy(_device);
+	blockBinding.destroy(_device);
 	material.destroy(_device);
 	_genBRDflut.destroy(_device);
 }

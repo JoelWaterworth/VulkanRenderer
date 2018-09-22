@@ -4,17 +4,17 @@
 
 UniformBuffer::UniformBuffer(Device * device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer, VkDeviceSize size)
 {
-	_device = device;
 	_descriptor = descriptor;
 	_memory = memory;
 	_buffer = buffer;
 	_size = size;
 }
 
-UniformBuffer::~UniformBuffer()
+
+void UniformBuffer::destroy(Device * device)
 {
-	vkDestroyBuffer(_device->handle(), _buffer, nullptr);
-	vkFreeMemory(_device->handle(), _memory, nullptr);
+	vkDestroyBuffer(device->handle(), _buffer, nullptr);
+	vkFreeMemory(device->handle(), _memory, nullptr);
 }
 
 void UniformBuffer::update(Device * device, const void * data)
@@ -35,7 +35,7 @@ VkDescriptorBufferInfo* UniformBuffer::getBufferInfo()
 	return &_descriptor;
 }
 
-UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t size, const void* data)
+UniformBuffer UniformBuffer::CreateUniformBufferBody(Device * device, size_t size, const void* data)
 {
 	std::pair<VkBuffer, VkDeviceMemory> bufferMemory = device->allocateBuffer(size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	VkBuffer buffer = bufferMemory.first;
@@ -49,5 +49,5 @@ UniformBuffer * UniformBuffer::CreateUniformBufferBody(Device * device, size_t s
 	descriptorInfo.buffer = buffer;
 	descriptorInfo.offset = 0;
 	descriptorInfo.range = size;
-	return new UniformBuffer(device, descriptorInfo, memory, buffer, size);
+	return UniformBuffer(device, descriptorInfo, memory, buffer, size);
 }

@@ -40,16 +40,17 @@ public:
 		VkImageUsageFlags _usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		VkImageLayout imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 		VkSampler sampler = nullptr,
+		bool bisSamplerOwned = false,
 		VkMemoryPropertyFlags memoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		uint32_t mipLevels = 1,
 		uint32_t levels = 1,
 		bool bIsCubeMap = false);
 
-	VkSampler _sampler = VK_NULL_HANDLE;
+	bool bIsSamplerOwned = true;
 
 private:
-	VkImage _image = nullptr;
-	VkImageView _imageView = nullptr;
+	VkImage _image = VK_NULL_HANDLE;
+	VkImageView _imageView = VK_NULL_HANDLE;
 	VkImageUsageFlags _usage;
 	VkFormat _format;
 	VkExtent2D _extent;
@@ -65,6 +66,7 @@ public:
 	inline VkFormat getFormat() const { return _format; }
 	inline VkImageLayout getImageLayout() const { return _descriptor.imageLayout; }
 	inline VkExtent2D getResloution() const { return _extent; }
+	inline VkSampler getSampler() const { return _descriptor.sampler; }
 	inline VkImageSubresourceRange getSubResource() const { return subResource; }
 	virtual VkDescriptorType getDescriptorType();
 	virtual VkDescriptorImageInfo* getImageInfo();

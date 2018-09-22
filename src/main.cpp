@@ -6,7 +6,7 @@ int main()
 {
 	Engine();
 	std::string name;
-#ifdef _DEBUG
+//#ifdef _DEBUG
 	getline(std::cin, name);
-#endif // DEBUG
+//#endif // DEBUG
 }

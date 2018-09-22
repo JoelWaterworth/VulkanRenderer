@@ -23,6 +23,12 @@ void alignedFree(void* data)
 #endif
 }
 
+void UniformDynamicBuffer::destroy(Device * device)
+{
+	vkDestroyBuffer(device->handle(), _buffer, nullptr);
+	vkFreeMemory(device->handle(), _memory, nullptr);
+}
+
 void UniformDynamicBuffer::flushMemory(Device * device, void * alignedAlloc)
 {
 	void* ptr = nullptr;
@@ -75,10 +81,5 @@ UniformDynamicBuffer::UniformDynamicBuffer(Device * device, size_t size, uint32_
 }
 
 UniformDynamicBuffer::UniformDynamicBuffer()
-{
-}
-
-
-UniformDynamicBuffer::~UniformDynamicBuffer()
 {
 }
