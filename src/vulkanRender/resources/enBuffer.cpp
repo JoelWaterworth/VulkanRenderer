@@ -1,4 +1,5 @@
 #include "enBuffer.h"
+#include "../device.h"
 
 EnBuffer::EnBuffer() {
 

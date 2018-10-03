@@ -5,12 +5,9 @@
 #include "playerCamera.h"
 #include "lightActor.h"
 
-Engine::Engine()
-{
+Engine::Engine() {
 	window = WindowHandle(1000, 1000, std::string("vulkan renderer"), this);
 #ifdef ALLOWINJECT
-
-
 
 	std::string name;
 	std::getline(std::cin, name);

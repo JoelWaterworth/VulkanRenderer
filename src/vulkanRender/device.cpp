@@ -3,6 +3,7 @@
 #include <vulkan/vk_icd.h>
 #include "util.h"
 #include <iostream>
+#include <cstring>
 #include <functional>
 #include "resources/resource.h"
 

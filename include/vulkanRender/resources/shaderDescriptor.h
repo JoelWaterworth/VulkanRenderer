@@ -1,8 +1,8 @@
 #pragma once
-#include "resource.h"
 #include <vulkan/vulkan.h>
 #include "../shader.h"
 #include "../uniformInterface.h"
+#include "../device.h"
 
 using namespace std;
 
@@ -15,18 +15,41 @@ struct UniformBinding {
 		uniform(Uniform), binding(Binding), set(Set){}
 };
 
-class Material : public Resource
-{
+class ShaderDescriptor {
 public:
-	Material() {};
-	Material(Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align);
-	~Material();
-	virtual void destroy(Device* device);
-	static Material CreateMaterialWithShader(Device * device, Shader* shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset = 0, bool bMakeShaderParent = true, uint32_t align = 0);
+
+	ShaderDescriptor() {};
+	ShaderDescriptor(
+	  Shader * shader,
+	  VkDescriptorPool descriptorPool,
+	  vector<VkDescriptorSet> descriptorSets,
+	  uint32_t firstSet,
+	  uint32_t align
+	) :
+	  _shader(shader),
+	  _descriptorPool(descriptorPool),
+	  _descriptorSets(descriptorSets),
+	  _firstSet(firstSet),
+	  _align(align)
+	{};
+	
+	// create ShaderDescriptor with shader
+	ShaderDescriptor(
+	  Device * device,
+	  Shader* shader,
+	  vector<UniformBinding> uniformBuffers,
+	  uint32_t setOffset = 0,
+	  bool bMakeShaderParent = true,
+	  uint32_t align = 0
+	);
+	
+	void destroy(Device* device);
+	
 	inline vector<VkDescriptorSet>* getDescriptorSets() { return &_descriptorSets; };
-	//shader is only supplied if this material is used for multiple different shaders
+	//shader is only supplied if this ShaderDescriptor is used for multiple different shaders
 	void makeCurrent(VkCommandBuffer cmd, Shader* shader = nullptr);
 	void makeCurrentAlign(VkCommandBuffer cmd, uint32_t index, Shader* shader = nullptr);
+	
 private:
 	Shader* _shader = nullptr;
 	vector<VkDescriptorSetLayout> _descriptorSetLayout;

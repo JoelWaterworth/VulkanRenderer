@@ -188,7 +188,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		UniformBinding(&_ao, 4, 2)
 	};
 	*/
-	printf("Create _presentMaterial\n");
+	printf("Create _presentShaderDescriptor\n");
 
 	UBO lights = {};
 	lights.viewPos = glm::vec3(0.0f, 0.0f, -2.0f);
@@ -217,12 +217,12 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 		UniformBinding(&_environmentCube,  1, 0),
 	};
 
-	//_presentMaterial = Material::CreateMaterialWithShader(_device, _presentShader, _presentUniforms);
-	printf("Create _presentMaterial\n");
-	_cameraDescriptor = Material::CreateMaterialWithShader(_device, &_presentShader, cameraUniforms, 0, false);
-	_positions = Material::CreateMaterialWithShader(_device, &_presentShader, posUniforms, 1, false, _matPostion.getAlign());
-	_skyboxDescriptor = Material::CreateMaterialWithShader(_device, &_skyboxShader, skyUniform, 0, false);
-	//_deferredMaterial = Material::CreateMaterialWithShader(_device, _deferredShader, deferredUniforms, 2);
+	//_presentShaderDescriptor = ShaderDescriptor(_device, _presentShader, _presentUniforms);
+	printf("Create _presentShaderDescriptor\n");
+	_cameraDescriptor = ShaderDescriptor(_device, &_presentShader, cameraUniforms, 0, false);
+	_positions = ShaderDescriptor(_device, &_presentShader, posUniforms, 1, false, _matPostion.getAlign());
+	_skyboxDescriptor = ShaderDescriptor(_device, &_skyboxShader, skyUniform, 0, false);
+	//_deferredShaderDescriptor = ShaderDescriptor(_device, _deferredShader, deferredUniforms, 2);
 	printf("begin CreateFencesSemaphores\n");
 	CreateFencesSemaphore();
 
@@ -317,7 +317,7 @@ void Renderer::destroy()
 	_matPostion.destroy(_device);
 	_cameraDescriptor.destroy(_device);
 	_skyboxDescriptor.destroy(_device);
-//	_deferredMaterial.destroy(_device);
+//	_deferredShaderDescriptor.destroy(_device);
 	
 	_presentShader.destroy(_device);
 	_skyboxShader.destroy(_device);
@@ -370,7 +370,7 @@ void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugRe
 	appInfo.pEngineName = title.c_str();
 	appInfo.engineVersion = 0;
 	appInfo.applicationVersion = 0;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 65,);
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 82);
 
 	VkInstanceCreateInfo instInfo = {};
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -635,7 +635,7 @@ void Renderer::BuildOffscreenCommandBuffer(VkCommandBuffer cmd, World* world)
 
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 	_monkey.bind(cmd);
-	_deferredMaterial.makeCurrent(cmd);
+	_deferredShaderDescriptor.makeCurrent(cmd);
 	for (int i = 0; i < 25; i++) {
 		_positions.makeCurrentAlign(cmd, i, &_deferredShader);
 		_monkey.draw(cmd);
@@ -741,7 +741,7 @@ void Renderer::generateIrradianceCube()
 
 	Shader _genBRDflut = Shader::Create(_device, &renderTarget, path("assets/shaders/filtercube.vert"), path("assets/shaders/irradiancecube.frag"), layout, layoutConts);
 
-	Material material = Material::CreateMaterialWithShader(_device, &_genBRDflut, bindings);
+	ShaderDescriptor shaderDescriptor = ShaderDescriptor(_device, &_genBRDflut, bindings);
 
 	std::vector<glm::mat4> matrices = {
 		// POSITIVE_X
@@ -803,7 +803,7 @@ void Renderer::generateIrradianceCube()
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdPushConstants(cmd, _genBRDflut.GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut.GetPipeline());
-			material.makeCurrent(cmd);
+			shaderDescriptor.makeCurrent(cmd);
 			_box.bind(cmd);
 
 			_box.draw(cmd);
@@ -847,7 +847,7 @@ void Renderer::generateIrradianceCube()
 
 	renderTarget.destroy(_device);
 	blockBinding.destroy(_device);
-	material.destroy(_device);
+	shaderDescriptor.destroy(_device);
 	_genBRDflut.destroy(_device);
 }
 
@@ -892,7 +892,7 @@ void Renderer::generatePrefilteredCube()
 		UniformBinding(&_environmentCube, 0)
 	};
 
-	Material material = Material::CreateMaterialWithShader(_device, &_genBRDflut, bindings);
+	ShaderDescriptor shaderDescriptor = ShaderDescriptor(_device, &_genBRDflut, bindings);
 
 	std::vector<glm::mat4> matrices = {
 		// POSITIVE_X
@@ -955,7 +955,7 @@ void Renderer::generatePrefilteredCube()
 			vkCmdBeginRenderPass(cmd, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdPushConstants(cmd, _genBRDflut.GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushBlock), &pushBlock);
 			vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _genBRDflut.GetPipeline());
-			material.makeCurrent(cmd);
+			shaderDescriptor.makeCurrent(cmd);
 			_box.bind(cmd);
 
 			_box.draw(cmd);
@@ -1003,6 +1003,6 @@ void Renderer::generatePrefilteredCube()
 
 	renderTarget.destroy(_device);
 	blockBinding.destroy(_device);
-	material.destroy(_device);
+	shaderDescriptor.destroy(_device);
 	_genBRDflut.destroy(_device);
 }

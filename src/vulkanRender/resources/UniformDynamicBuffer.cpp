@@ -1,5 +1,6 @@
 #include "UniformDynamicBuffer.h"
 #include <iostream>
+#include <cstring>
 
 void* alignedAlloc(size_t size, size_t alignment)
 {

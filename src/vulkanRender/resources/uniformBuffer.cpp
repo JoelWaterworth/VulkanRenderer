@@ -1,5 +1,5 @@
 #include "uniformBuffer.h"
-
+#include <cstring>
 
 
 UniformBuffer::UniformBuffer(Device * device, VkDescriptorBufferInfo descriptor, VkDeviceMemory memory, VkBuffer buffer, VkDeviceSize size)
@@ -21,7 +21,7 @@ void UniformBuffer::update(Device * device, const void * data)
 {
 	void* ptr = VK_NULL_HANDLE;
 	vkMapMemory(device->handle(), _memory, 0, _size, 0, &ptr);
-	memcpy(ptr, data, _size);
+	std::memcpy(ptr, data, _size);
 	vkUnmapMemory(device->handle(), _memory);
 }
 
@@ -43,7 +43,7 @@ UniformBuffer UniformBuffer::CreateUniformBufferBody(Device * device, size_t siz
 
 	void* ptr = nullptr;
 	vkMapMemory(device->handle(), memory, 0, size, 0, &ptr);
-	memcpy(ptr, data, size);
+	std::memcpy(ptr, data, size);
 	vkUnmapMemory(device->handle(), memory);
 	VkDescriptorBufferInfo descriptorInfo = {};
 	descriptorInfo.buffer = buffer;

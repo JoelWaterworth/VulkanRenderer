@@ -24,24 +24,18 @@ class Mesh : public Resource
 public:
 	static Mesh Create(Device* device, path p);
 	Mesh(Device* device, std::vector<float> vertexData, std::vector<unsigned int> indexData);
-	Mesh() :
-		_device(nullptr),
-		_indexBuffer(nullptr),
-		_vertexBuffer(nullptr),
-		_indexBufferLen(0),
-		_indexOffset(0),
-		_vertexOffset(0)
-	{};
+	Mesh() {};
+	
 	void bind(VkCommandBuffer commandBuffer);
 	void draw(VkCommandBuffer commandBuffer);
 	virtual void destroy(Device* device);
 	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
 	void setBufferName(Device* device, const char* name);
 private:
-	Device * _device;
-	EnBuffer* _indexBuffer;
-	EnBuffer* _vertexBuffer;
-	uint32_t _indexBufferLen;
+	Device * _device = nullptr;
+	EnBuffer* _indexBuffer = nullptr;
+	EnBuffer* _vertexBuffer = nullptr;
+	uint32_t _indexBufferLen = 0;
 	uint64_t _indexOffset = 0;
 	uint64_t _vertexOffset = 0;
 };

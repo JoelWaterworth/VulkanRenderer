@@ -1,29 +1,15 @@
-#include "material.h"
+#include "shaderDescriptor.h"
 #include "../util.h"
 #include <iostream>
 
-Material::Material(Shader * shader, VkDescriptorPool descriptorPool, vector<VkDescriptorSet> descriptorSets, uint32_t firstSet, uint32_t align)
-{
-	_shader = shader;
-	_descriptorPool = descriptorPool;
-	_descriptorSets = descriptorSets;
-	_firstSet = firstSet;
-	_align = align;
-}
-
-Material::~Material()
-{
-	
-}
-
-void Material::destroy(Device * device)
-{
-	//vkFreeDescriptorSets(device->handle(), _descriptorPool, _descriptorSets.size(), _descriptorSets.data());
-	vkDestroyDescriptorPool(device->handle(), _descriptorPool, nullptr);
-}
-
-Material Material::CreateMaterialWithShader(Device * device, Shader * shader, vector<UniformBinding> uniformBuffers, uint32_t setOffset, bool bMakeShaderParent, uint32_t align)
-{
+ShaderDescriptor::ShaderDescriptor(
+    Device * device,
+    Shader * shader,
+    vector<UniformBinding> uniformBuffers,
+    uint32_t setOffset,
+    bool bMakeShaderParent,
+    uint32_t align
+  ) {
 	uint32_t lastSet = 0;
 	std::vector<VkDescriptorPoolSize> pool;
 	for (int i = 0; i < uniformBuffers.size(); i++) {
@@ -73,24 +59,43 @@ Material Material::CreateMaterialWithShader(Device * device, Shader * shader, ve
 	};
 
 	vkUpdateDescriptorSets(device->handle(), descriptors.size(), descriptors.data(), 0, nullptr);
-	return Material(bMakeShaderParent ? shader : nullptr, descriptorPool, descriptorSet, setOffset, align);
+	
+	_shader = bMakeShaderParent ? shader : nullptr;
+	_descriptorSetLayout = desSetLayouts;
+	_descriptorPool = descriptorPool;
+	_descriptorSets = descriptorSet;
+	_firstSet = setOffset;
+	_align = align;
 }
 
-void Material::makeCurrent(VkCommandBuffer cmd, Shader* shader) {
-	if (_shader == nullptr) {
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), _firstSet, _descriptorSets.size(), _descriptorSets.data(), 0, nullptr);
-	}
-	else {
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shader->GetPipelineLayout(), _firstSet, _descriptorSets.size(), _descriptorSets.data(), 0, nullptr);
-	}
+void ShaderDescriptor::destroy(Device * device)
+{
+	//vkFreeDescriptorSets(device->handle(), _descriptorPool, _descriptorSets.size(), _descriptorSets.data());
+	vkDestroyDescriptorPool(device->handle(), _descriptorPool, nullptr);
 }
 
-void Material::makeCurrentAlign(VkCommandBuffer cmd, uint32_t index, Shader* shader) {
+void ShaderDescriptor::makeCurrent(VkCommandBuffer cmd, Shader* shader) {
+	vkCmdBindDescriptorSets(
+	  cmd,
+	  VK_PIPELINE_BIND_POINT_GRAPHICS,
+	  (shader == nullptr ? _shader : shader)->GetPipelineLayout(),
+	  _firstSet,
+	  _descriptorSets.size(),
+	  _descriptorSets.data(),
+	  0,
+	  nullptr
+  );
+}
+
+void ShaderDescriptor::makeCurrentAlign(VkCommandBuffer cmd, uint32_t index, Shader* shader) {
 	uint32_t offset = _align * index;
-	if (_shader == nullptr) {
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), _firstSet, _descriptorSets.size(), _descriptorSets.data(), 1, &offset);
-	}
-	else {
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shader->GetPipelineLayout(), _firstSet, _descriptorSets.size(), _descriptorSets.data(), 1, &offset);
-	}
+	vkCmdBindDescriptorSets(
+	  cmd,
+	  VK_PIPELINE_BIND_POINT_GRAPHICS,
+	  (_shader == nullptr ? shader : _shader)->GetPipelineLayout(),
+	  _firstSet, _descriptorSets.size(),
+	  _descriptorSets.data(),
+	  1,
+	  &offset
+	);
 }

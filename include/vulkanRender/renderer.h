@@ -8,7 +8,7 @@
 #include "resources/mesh.h"
 #include "shader.h"
 #include "uniformInterface.h"
-#include "resources/material.h"
+#include "resources/shaderDescriptor.h"
 #include "resources/texture.h"
 #include "resources/resource.h"
 #include "resources/uniformBuffer.h"
@@ -115,11 +115,11 @@ private:
 	Shader _deferredShader;
 	Shader _skyboxShader;
 
-	Material _cameraDescriptor;
-	Material _positions;
-	Material _skyboxDescriptor;
-	Material _presentMaterial;
-	Material _deferredMaterial;
+	ShaderDescriptor _cameraDescriptor;
+	ShaderDescriptor _positions;
+	ShaderDescriptor _skyboxDescriptor;
+	ShaderDescriptor _presentShaderDescriptor;
+	ShaderDescriptor _deferredShaderDescriptor;
 
 	UniformInterface* _unfirom = nullptr;
 	UniformBuffer _cameraSpace;

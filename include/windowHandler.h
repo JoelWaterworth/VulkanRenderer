@@ -1,15 +1,15 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
+#include <set>
 #include <string>
+
 #if defined(_WIN32)
 #include <windows.h>
 #else
 #include<X11/Xlib.h>
 #endif
-#include <vulkan/vulkan.h>
-#include <glm/glm.hpp>
-
-#include <set>
 
 enum class KeyInput : uint16_t {
 	Esc,

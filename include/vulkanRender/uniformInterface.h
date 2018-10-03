@@ -2,8 +2,7 @@
 #include <vulkan/vulkan.h>
 #include "device.h"
 
-class UniformInterface
-{
+class UniformInterface {
 public:
 	virtual ~UniformInterface();
 	virtual VkDescriptorType getDescriptorType();

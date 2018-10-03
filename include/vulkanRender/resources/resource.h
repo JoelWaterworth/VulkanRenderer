@@ -3,8 +3,7 @@
 
 class Device;
 
-class Resource
-{
+class Resource {
 public:
 	inline VkMemoryRequirements getRequirments() const { return requirments; };
 	virtual void bindMemory(Device* device, VkDeviceMemory memory, uint64_t localOffset);
