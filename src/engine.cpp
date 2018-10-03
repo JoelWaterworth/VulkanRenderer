@@ -5,8 +5,7 @@
 #include "playerCamera.h"
 #include "lightActor.h"
 
-Engine::Engine() {
-	window = WindowHandle(1000, 1000, std::string("vulkan renderer"), this);
+Engine::Engine() : window(WindowHandle(1000, 1000, std::string("vulkan renderer"), this)) {
 #ifdef ALLOWINJECT
 
 	std::string name;

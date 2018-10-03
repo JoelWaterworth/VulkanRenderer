@@ -36,10 +36,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 uint64_t	WindowHandle::_win32_class_id_counter = 0;
 
-WindowHandle::WindowHandle()
-{
-}
-
 WindowHandle::WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine)
 {
 	HINSTANCE hInstance = GetModuleHandle(nullptr);

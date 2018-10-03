@@ -24,7 +24,6 @@ class Engine;
 class WindowHandle
 {
 public:
-	WindowHandle();
 	WindowHandle(uint32_t size_x, uint32_t size_y, std::string title, Engine* engine);
 	~WindowHandle();
 
