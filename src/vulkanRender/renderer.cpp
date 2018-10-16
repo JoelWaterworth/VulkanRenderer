@@ -69,6 +69,7 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	printf("initDevice\n");
 	GetCapabilities();
 	CreateSwapchain();
+	printf("CreateSwapchain\n");
 	std::array<AttachmentInfo, 7> defferedAttachmentInfo{ {
 		{ VK_FORMAT_R8G8B8A8_UNORM,			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1 },
 		{ VK_FORMAT_R16G16B16A16_SFLOAT,	VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1 },
@@ -88,17 +89,17 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 
 	PresentRenderTarget = RenderTarget::Create(_device, resolution, PresentAttachmentInfo, 2, &swapchain.view);
 	//DeferredRenderTarget = RenderTarget::Create(_device, resolution, defferedAttachmentInfo.data(), defferedAttachmentInfo.size());
-
+  printf("PresentRenderTarget\n");
 	_baseColour = Texture::Create(_device, path("assets/textures/Metal_basecolor.png"));
 	_normal = Texture::Create(_device, path("assets/textures/Metal_normal.png"));
 	_roughness = Texture::Create(_device, path("assets/textures/Metal_roughness.png"));
 	_metallic = Texture::Create(_device, path("assets/textures/Metal_metallic.png"));
 	_ao = Texture::Create(_device, path("assets/textures/Metal_AO.png"));
 
-	_plane = Mesh::Create(_device, path("assets/Mesh/plane.dae"));
+	_plane = Mesh::Create(_device, path("assets/mesh/plane.dae"));
 	_plane.setBufferName(_device, "plane");
-	_monkey = Mesh::Create(_device, path("assets/Mesh/sphere.dae"));
-	_box = Mesh::Create(_device, path("assets/Mesh/cube.obj"));
+	_monkey = Mesh::Create(_device, path("assets/mesh/sphere.dae"));
+	_box = Mesh::Create(_device, path("assets/mesh/cube.obj"));
 	_environmentCube = Texture::CreateCubeMap(_device, path("assets/textures/hdr/pisa_cube.ktx"), VK_FORMAT_R16G16B16A16_SFLOAT);
 	printf("load mesh complete\n");
 	_monkey.setBufferName(_device, "monkey");
@@ -135,22 +136,39 @@ Renderer::Renderer(std::string title, WindowHandle* window, bool bwValidation, b
 	};
 
 	printf("Create Shader\n");
-	_presentShader = Shader::Create(_device, &PresentRenderTarget, path("assets/shaders/present.vert"), path("assets/shaders/present.frag"), presentLayout);
-	_skyboxShader  = Shader::Create(_device, &PresentRenderTarget, path("assets/shaders/skybox.vert"), path("assets/shaders/skybox.frag"), skyboxLayout);
+	_presentShader =
+	  Shader::Create(
+	    _device,
+	    &PresentRenderTarget,
+	    path("assets/shaders/present.vert"),
+	    path("assets/shaders/present.frag"),
+	    presentLayout);
+	_skyboxShader  =
+	  Shader::Create(
+	    _device,
+	    &PresentRenderTarget,
+	    path("assets/shaders/skybox.vert"),
+	    path("assets/shaders/skybox.frag"),
+	    skyboxLayout);
 	//printf("Create _deferredShader\n");
 	//_deferredShader = Shader::Create(_device, DeferredRenderTarget, path("assets/shaders/deferred.vert"), path("assets/shaders/deferred.frag"), deferredLayout);
 
 	//_skyShader = Shader::Create(_device, PresentRenderTarget, path("assets/shaders/skybox.vert"), path("assets/shaders/skybox.frag"), presentLayout);
 
 	_cameraMat = {};
-	_cameraMat.per = glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) * glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
+	_cameraMat.per =
+	  glm::perspective(glm::radians(45.0f), 1.0f, 0.1f, 100.0f) *
+	  glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
 
 	float spacing = 2.0f;
 	vector<Model> models;
 	for (int x = 0; x < 5; x++) {
 		for (int y = 0; y < 5; y++) {
 			Model m = {};
-			m.transform = glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, 5.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
+			m.transform = 
+			  glm::translate(glm::mat4(1.0f), glm::vec3((x * spacing) - 4.0f, (y * spacing) - 4.0f, 5.0f)) *
+			  glm::rotate(glm::mat4(1.0f), glm::radians(-0.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+			  glm::scale(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.5f));
 			m.metalic = y * 0.2f;
 			m.roughness = x * 0.2f;
 			m.colour = glm::vec3(1.0f, 0.0f, 0.0f);
@@ -370,7 +388,7 @@ void Renderer::initInstance(std::string title, bool bwValidation, bool bwDebugRe
 	appInfo.pEngineName = title.c_str();
 	appInfo.engineVersion = 0;
 	appInfo.applicationVersion = 0;
-	appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 82);
+	appInfo.apiVersion = VK_MAKE_VERSION(1, 1, 77);
 
 	VkInstanceCreateInfo instInfo = {};
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

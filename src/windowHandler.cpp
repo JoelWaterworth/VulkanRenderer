@@ -192,17 +192,11 @@ bool WindowHandle::Update() {
 }
 
 VkSurfaceKHR WindowHandle::createSurface(VkInstance inst) {
-    printf("pre create xlib surface\n");
-    VkSurfaceKHR surface = nullptr;
-    printf("VkSurfaceKHR surface = nullptr\n");
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
 	VkXlibSurfaceCreateInfoKHR createInfo = {};
-	printf("VkXlibSurfaceCreateInfoKHR createInfo = {}\n");
 	createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-	printf("createInfo.dpy = _display\n");
 	createInfo.dpy = _display;
-	printf("createInfo.window = *_Window\n");
 	createInfo.window = _Window;
-	printf("VK_CHECK_RESULT(vkCreateXlibSurfaceKHR(inst, &createInfo, NULL, &surface))\n");
 	VK_CHECK_RESULT(vkCreateXlibSurfaceKHR(inst, &createInfo, NULL, &surface));
 	return surface;
 }

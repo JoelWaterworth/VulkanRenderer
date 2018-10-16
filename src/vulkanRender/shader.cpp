@@ -19,21 +19,22 @@ void Shader::destroy(Device * device)
 std::pair<char *, size_t> Shader::compile(path shader) {
 	path spv_path = shader;
 	std::string filename = shader.filename().string();
-	filename.append("spv.spv");
+	filename.append(".spv");
 	spv_path.replace_filename(filename);
-	std::string command = "glslangValidator -V -o ";
-	command.append(spv_path.string());
-	command.push_back(' ');
+	std::string command = "glslangValidator -V ";
 	command.append(shader.string());
+	command.append(" -o ");
+	command.append(spv_path.string());
 	system(command.data());
 	FILE *fp = fopen(spv_path.string().data(), "rb");
 	if (!fp) {
+	  printf("unable to compile shader");
 		return std::pair<char *, size_t>();
 	}
 
 	fseek(fp, 0L, SEEK_END);
 	long int size = ftell(fp);
-
+  assert(size > 0);
 	fseek(fp, 0L, SEEK_SET);
 
 	void *shader_code = malloc(size);
@@ -69,14 +70,18 @@ pair<VkShaderModule, VkPipelineShaderStageCreateInfo> Shader::createPipelineStag
 	return make_pair(Module, pipelineStageInfo);
 }
 
-Shader Shader::Create(Device * device, RenderTarget* renderTarget, path vertPath, path fragPath, vector<ShaderLayout> layouts, std::vector<VkPushConstantRange> consts, bool bIsDisableVertexDescriptor)
+Shader Shader::Create(
+  Device * device,
+  RenderTarget* renderTarget,
+  path vertPath, path fragPath,
+  vector<ShaderLayout> layouts,
+  std::vector<VkPushConstantRange> consts,
+  bool bIsDisableVertexDescriptor)
 {
 	pair<VkShaderModule, VkPipelineShaderStageCreateInfo> vertRes =
 		Shader::createPipelineStageInfo(device, vertPath, VK_SHADER_STAGE_VERTEX_BIT);
 	pair<VkShaderModule, VkPipelineShaderStageCreateInfo> fragRes =
 		Shader::createPipelineStageInfo(device, fragPath, VK_SHADER_STAGE_FRAGMENT_BIT);
-
-	printf("shader stages created\n");
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {
 		vertRes.second, fragRes.second
